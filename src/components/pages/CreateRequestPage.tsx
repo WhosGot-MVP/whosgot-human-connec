@@ -222,12 +222,12 @@ export function CreateRequestPage({ onNavigate }: CreateRequestPageProps) {
 
                 <div className="space-y-2">
                   <Label htmlFor="tag">Tag (Optional)</Label>
-                  <Select value={tag} onValueChange={(value) => setTag(value as Tag)}>
+                  <Select value={tag || 'none'} onValueChange={(value) => setTag(value === 'none' ? '' : value as Tag)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Add a tag" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No tag</SelectItem>
+                      <SelectItem value="none">No tag</SelectItem>
                       {TAGS.map(tagOption => (
                         <SelectItem key={tagOption.value} value={tagOption.value}>
                           {tagOption.label}
