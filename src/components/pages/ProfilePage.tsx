@@ -20,6 +20,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
 
   useEffect(() => {
     fetchUserData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   const fetchUserData = async () => {
@@ -29,38 +30,45 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
       if (!supabase) {
         // Mock data for demo
         const { MOCK_REQUESTS, MOCK_RESPONSES } = await import('@/lib/mockData');
-        const userRequests = MOCK_REQUESTS.filter(r => r.authorId === userId);
+        const userRequests = MOCK_REQUESTS.filter((r) => r.authorId === userId);
         const userResponsesWithRequests = MOCK_RESPONSES
-          .filter(r => r.authorId === userId)
-          .map(response => ({
+          .filter((r) => r.authorId === userId)
+          .map((response) => ({
             ...response,
-            Request: MOCK_REQUESTS.find(req => req.id === response.requestId)
+            // приводим к тому же имени, что и из API (request)
+            request: MOCK_REQUESTS.find((req) => req.id === response.requestId),
           }));
-        
+
         setUserRequests(userRequests);
         setUserResponses(userResponsesWithRequests as any);
         return;
       }
 
       // Fetch user's requests
-      const { data: requestsData, error: requestsError } = await supabase
-        .from('Request')
+      const {
+        data: requestsData,
+        error: requestsError,
+      } = await supabase
+        .from('requests')
         .select('*')
         .eq('authorId', userId)
         .order('createdAt', { ascending: false });
 
       if (requestsError) throw requestsError;
-      setUserRequests(requestsData || []);
+      setUserRequests(requestsData ?? []);
 
-      // Fetch user's responses
-      const { data: responsesData, error: responsesError } = await supabase
-        .from('Response')
-        .select('*, Request(*)')
+      // Fetch user's responses (с подтяжкой связанного request)
+      const {
+        data: responsesData,
+        error: responsesError,
+      } = await supabase
+        .from('responses')
+        .select('*, request:requests(*)')
         .eq('authorId', userId)
         .order('createdAt', { ascending: false });
 
       if (responsesError) throw responsesError;
-      setUserResponses(responsesData || []);
+      setUserResponses(responsesData ?? []);
     } catch (error) {
       console.error('Error fetching user data:', error);
       toast.error('Failed to load profile data.');
@@ -71,10 +79,10 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric'
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
     });
   };
 
@@ -140,12 +148,14 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
             <CardContent>
               <div className="space-y-4">
                 {userRequests.map((request) => (
-                  <div 
+                  <div
                     key={request.id}
                     className="p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
                     onClick={() => onNavigate('request-detail', request.id)}
                   >
-                    <h3 className="font-medium text-foreground mb-2">{request.title}</h3>
+                    <h3 className="font-medium text-foreground mb-2">
+                      {request.title}
+                    </h3>
                     {request.description && (
                       <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
                         {request.description}
@@ -157,7 +167,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                       </Badge>
                       {request.tag && (
                         <Badge variant="secondary" className="text-xs">
-                          {TAGS.find(t => t.value === request.tag)?.label}
+                          {TAGS.find((t) => t.value === request.tag)?.label}
                         </Badge>
                       )}
                       <span className="text-xs text-muted-foreground ml-auto">
@@ -183,14 +193,15 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
             <CardContent>
               <div className="space-y-4">
                 {userResponses.map((response) => (
-                  <div 
+                  <div
                     key={response.id}
                     className="p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
                     onClick={() => onNavigate('request-detail', response.requestId)}
                   >
                     <p className="text-sm text-muted-foreground mb-2">
-                      Response to: <span className="font-medium text-foreground">
-                        {(response as any).Request?.title || 'Request'}
+                      Response to:{' '}
+                      <span className="font-medium text-foreground">
+                        {(response as any).request?.title || 'Request'}
                       </span>
                     </p>
                     <p className="text-sm text-foreground line-clamp-3 mb-2">
@@ -227,3 +238,11 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
     </div>
   );
 }
+
+
+       
+  
+       
+               
+              
+           
