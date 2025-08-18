@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { MagnifyingGlass, Funnel } from '@phosphor-icons/react';
-import { MOCK_REQUESTS } from '@/lib/mockData';
-import { CATEGORIES, TAGS, Category, Tag } from '@/lib/types';
+import { supabase } from '@/lib/supabase';
+import { CATEGORIES, TAGS, Category, Tag, Request } from '@/lib/types';
 import { RequestCard } from '@/components/RequestCard';
+import { toast } from 'sonner';
 
 interface RequestsPageProps {
   onNavigate: (page: any, requestId?: string) => void;
@@ -17,8 +18,66 @@ export function RequestsPage({ onNavigate }: RequestsPageProps) {
   const [selectedCategory, setSelectedCategory] = useState<Category | 'all'>('all');
   const [selectedTag, setSelectedTag] = useState<Tag | 'all'>('all');
   const [locationFilter, setLocationFilter] = useState('');
+  const [requests, setRequests] = useState<Request[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const filteredRequests = MOCK_REQUESTS.filter(request => {
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
+  const fetchRequests = async (offset = 0) => {
+    try {
+      if (offset === 0) setLoading(true);
+      else setLoadingMore(true);
+
+      if (!supabase) {
+        // Fallback to mock data
+        const { MOCK_REQUESTS } = await import('@/lib/mockData');
+        const mockData = MOCK_REQUESTS.slice(offset, offset + 20);
+        
+        if (offset === 0) {
+          setRequests(mockData);
+        } else {
+          setRequests(prev => [...prev, ...mockData]);
+        }
+        
+        setHasMore(mockData.length === 20);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('Request')
+        .select('*')
+        .order('createdAt', { ascending: false })
+        .range(offset, offset + 19);
+
+      if (error) throw error;
+
+      if (offset === 0) {
+        setRequests(data || []);
+      } else {
+        setRequests(prev => [...prev, ...(data || [])]);
+      }
+
+      setHasMore((data || []).length === 20);
+    } catch (error) {
+      console.error('Error fetching requests:', error);
+      toast.error('Failed to load requests. Please try again.');
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const loadMoreRequests = () => {
+    if (!loadingMore && hasMore) {
+      fetchRequests(requests.length);
+    }
+  };
+
+  const filteredRequests = requests.filter(request => {
     const matchesSearch = searchTerm === '' || 
       request.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (request.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
@@ -148,18 +207,24 @@ export function RequestsPage({ onNavigate }: RequestsPageProps) {
         </div>
 
         {/* Results */}
-        {filteredRequests.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground text-lg">Loading requests...</p>
+          </div>
+        ) : filteredRequests.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground text-lg mb-4">
-              No requests found matching your filters.
+              {requests.length === 0 ? 'No requests found.' : 'No requests found matching your filters.'}
             </p>
-            <Button
-              variant="outline"
-              onClick={clearFilters}
-              className="hover:bg-primary hover:text-primary-foreground"
-            >
-              Clear Filters
-            </Button>
+            {hasActiveFilters && (
+              <Button
+                variant="outline"
+                onClick={clearFilters}
+                className="hover:bg-primary hover:text-primary-foreground"
+              >
+                Clear Filters
+              </Button>
+            )}
           </div>
         ) : (
           <div className="grid md:grid-cols-2 gap-6">
@@ -174,13 +239,15 @@ export function RequestsPage({ onNavigate }: RequestsPageProps) {
         )}
 
         {/* Load More */}
-        {filteredRequests.length >= 20 && (
+        {!loading && hasMore && !hasActiveFilters && (
           <div className="text-center pt-8">
             <Button
               variant="outline"
+              onClick={loadMoreRequests}
+              disabled={loadingMore}
               className="hover:bg-primary hover:text-primary-foreground"
             >
-              Load More Requests
+              {loadingMore ? 'Loading...' : 'Load More Requests'}
             </Button>
           </div>
         )}

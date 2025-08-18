@@ -7,16 +7,20 @@ import { RequestsPage } from '@/components/pages/RequestsPage';
 import { RequestDetailPage } from '@/components/pages/RequestDetailPage';
 import { CreateRequestPage } from '@/components/pages/CreateRequestPage';
 import { AboutPage } from '@/components/pages/AboutPage';
+import { ProfilePage } from '@/components/pages/ProfilePage';
+import { supabase } from '@/lib/supabase';
 
-type Page = 'home' | 'requests' | 'create' | 'about' | 'request-detail';
+type Page = 'home' | 'requests' | 'create' | 'about' | 'request-detail' | 'profile';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
-  const navigateTo = (page: Page, requestId?: string) => {
+  const navigateTo = (page: Page, requestId?: string, userId?: string) => {
     setCurrentPage(page);
     if (requestId) setSelectedRequestId(requestId);
+    if (userId) setSelectedUserId(userId);
   };
 
   const renderPage = () => {
@@ -35,6 +39,12 @@ function App() {
         return <CreateRequestPage onNavigate={navigateTo} />;
       case 'about':
         return <AboutPage onNavigate={navigateTo} />;
+      case 'profile':
+        return selectedUserId ? (
+          <ProfilePage userId={selectedUserId} onNavigate={navigateTo} />
+        ) : (
+          <HomePage onNavigate={navigateTo} />
+        );
       default:
         return <HomePage onNavigate={navigateTo} />;
     }
@@ -43,6 +53,18 @@ function App() {
   return (
     <AuthProvider>
       <div className="min-h-screen bg-background">
+        {/* Supabase Configuration Banner */}
+        {!supabase && (
+          <div className="bg-yellow-100 border-b border-yellow-200 px-4 py-2">
+            <div className="container mx-auto text-center">
+              <p className="text-sm text-yellow-800">
+                <strong>Demo Mode:</strong> Configure Supabase environment variables for full functionality. 
+                <span className="hidden md:inline"> Using mock data for demonstration.</span>
+              </p>
+            </div>
+          </div>
+        )}
+        
         <Header currentPage={currentPage} onNavigate={navigateTo} />
         <main className="pb-16">
           {renderPage()}

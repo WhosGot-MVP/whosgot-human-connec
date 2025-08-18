@@ -9,6 +9,7 @@ export interface Request {
   category: Category;
   tag: Tag | null;
   location: string | null;
+  photoUrl: string | null;
   createdAt: string;
 }
 

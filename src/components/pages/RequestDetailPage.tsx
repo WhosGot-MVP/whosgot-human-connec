@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -7,8 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowLeft, MapPin, Clock, Heart, Share } from '@phosphor-icons/react';
-import { MOCK_REQUESTS, MOCK_RESPONSES } from '@/lib/mockData';
-import { TAGS } from '@/lib/types';
+import { supabase } from '@/lib/supabase';
+import { TAGS, Request, Response } from '@/lib/types';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
 
@@ -22,9 +22,55 @@ export function RequestDetailPage({ requestId, onNavigate }: RequestDetailPagePr
   const [responseMessage, setResponseMessage] = useState('');
   const [contactInfo, setContactInfo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [request, setRequest] = useState<Request | null>(null);
+  const [responses, setResponses] = useState<Response[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const request = MOCK_REQUESTS.find(r => r.id === requestId);
-  const responses = MOCK_RESPONSES.filter(r => r.requestId === requestId);
+  useEffect(() => {
+    fetchRequestAndResponses();
+  }, [requestId]);
+
+  const fetchRequestAndResponses = async () => {
+    try {
+      setLoading(true);
+      
+      if (!supabase) {
+        // Fallback to mock data
+        const { MOCK_REQUESTS, MOCK_RESPONSES } = await import('@/lib/mockData');
+        const mockRequest = MOCK_REQUESTS.find(r => r.id === requestId);
+        const mockResponses = MOCK_RESPONSES.filter(r => r.requestId === requestId);
+        
+        setRequest(mockRequest || null);
+        setResponses(mockResponses);
+        return;
+      }
+      
+      // Fetch request
+      const { data: requestData, error: requestError } = await supabase
+        .from('Request')
+        .select('*')
+        .eq('id', requestId)
+        .single();
+
+      if (requestError) throw requestError;
+      setRequest(requestData);
+
+      // Fetch responses
+      const { data: responsesData, error: responsesError } = await supabase
+        .from('Response')
+        .select('*')
+        .eq('requestId', requestId)
+        .order('createdAt', { ascending: true });
+
+      if (responsesError) throw responsesError;
+      setResponses(responsesData || []);
+    } catch (error) {
+      console.error('Error fetching request:', error);
+      toast.error('Failed to load request details.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!request) {
     return (
@@ -65,18 +111,49 @@ export function RequestDetailPage({ requestId, onNavigate }: RequestDetailPagePr
 
     setIsSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!supabase) {
+        // Mock response for demo
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        toast.success('Your response has been sent! (Demo mode)');
+        setResponseMessage('');
+        setContactInfo('');
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('Response')
+        .insert({
+          requestId,
+          message: responseMessage.trim(),
+          contact: contactInfo.trim() || null,
+          authorId: user.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
       
       toast.success('Your response has been sent!');
       setResponseMessage('');
       setContactInfo('');
+      
+      // Refresh responses
+      await fetchRequestAndResponses();
     } catch (error) {
+      console.error('Error sending response:', error);
       toast.error('Failed to send response. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <p className="text-center text-muted-foreground">Loading request...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">

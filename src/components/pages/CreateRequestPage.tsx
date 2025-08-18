@@ -7,8 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Sparkle } from '@phosphor-icons/react';
-import { CATEGORIES, TAGS, Category, Tag } from '@/lib/types';
-import { MOCK_REQUESTS } from '@/lib/mockData';
+import { CATEGORIES, TAGS, Category, Tag, Request } from '@/lib/types';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
 
@@ -26,6 +26,7 @@ export function CreateRequestPage({ onNavigate }: CreateRequestPageProps) {
   const [photoUrl, setPhotoUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSimilar, setShowSimilar] = useState(false);
+  const [similarRequests, setSimilarRequests] = useState<Request[]>([]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,30 +41,73 @@ export function CreateRequestPage({ onNavigate }: CreateRequestPageProps) {
 
     setIsSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (!supabase) {
+        // Mock submission for demo
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        toast.success('Your request has been posted! (Demo mode)');
+        await fetchSimilarRequests();
+        setShowSimilar(true);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('Request')
+        .insert({
+          title: title.trim(),
+          description: description.trim() || null,
+          category,
+          tag: tag || null,
+          location: location.trim() || null,
+          photoUrl: photoUrl.trim() || null,
+          authorId: user.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
       
       toast.success('Your request has been posted!');
+      
+      // Fetch similar requests based on category and title keywords
+      await fetchSimilarRequests();
       setShowSimilar(true);
     } catch (error) {
+      console.error('Error creating request:', error);
       toast.error('Failed to create request. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const getSimilarRequests = () => {
-    // Simple similarity based on category and keywords
-    const keywords = title.toLowerCase().split(' ');
-    return MOCK_REQUESTS
-      .filter(r => 
-        r.category === category || 
-        keywords.some(keyword => 
-          r.title.toLowerCase().includes(keyword) || 
-          r.description?.toLowerCase().includes(keyword)
-        )
-      )
-      .slice(0, 3);
+  const fetchSimilarRequests = async () => {
+    try {
+      if (!supabase) {
+        // Mock similar requests for demo
+        const { MOCK_REQUESTS } = await import('@/lib/mockData');
+        const keywords = title.toLowerCase().split(' ').filter(word => word.length > 3);
+        const similar = MOCK_REQUESTS.filter(r => 
+          r.category === category || 
+          keywords.some(keyword => r.title.toLowerCase().includes(keyword))
+        ).slice(0, 3);
+        setSimilarRequests(similar);
+        return;
+      }
+
+      const keywords = title.toLowerCase().split(' ').filter(word => word.length > 3);
+      
+      const { data, error } = await supabase
+        .from('Request')
+        .select('*')
+        .or(`category.eq.${category},${keywords.map(keyword => `title.ilike.%${keyword}%`).join(',')}`)
+        .order('createdAt', { ascending: false })
+        .limit(3);
+
+      if (error) throw error;
+      setSimilarRequests(data || []);
+    } catch (error) {
+      console.error('Error fetching similar requests:', error);
+      setSimilarRequests([]);
+    }
   };
 
   if (!user) {
@@ -90,8 +134,6 @@ export function CreateRequestPage({ onNavigate }: CreateRequestPageProps) {
   }
 
   if (showSimilar) {
-    const similarRequests = getSimilarRequests();
-    
     return (
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="space-y-6">

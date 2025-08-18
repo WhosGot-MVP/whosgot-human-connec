@@ -1,25 +1,71 @@
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PencilSimple, ChatCircle, HandHeart } from '@phosphor-icons/react';
-import { MOCK_REQUESTS, DEMO_EXAMPLES } from '@/lib/mockData';
-import { CATEGORIES, TAGS } from '@/lib/types';
+import { supabase } from '@/lib/supabase';
+import { DEMO_EXAMPLES } from '@/lib/mockData';
+import { CATEGORIES, TAGS, Request } from '@/lib/types';
 import { RequestCard } from '@/components/RequestCard';
+import { toast } from 'sonner';
 
 interface HomePageProps {
   onNavigate: (page: any, requestId?: string) => void;
 }
 
 export function HomePage({ onNavigate }: HomePageProps) {
-  const urgentRequests = MOCK_REQUESTS.filter(r => r.tag === 'URGENT').slice(0, 2);
-  const heartWarmingRequests = MOCK_REQUESTS.filter(r => r.tag === 'HEARTWARMING').slice(0, 2);
-  const latestRequests = MOCK_REQUESTS.slice(0, 4);
+  const [requests, setRequests] = useState<Request[]>([]);
+  const [categoryStats, setCategoryStats] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Count requests by category for "Most Wanted"
-  const categoryStats = CATEGORIES.map(cat => ({
-    ...cat,
-    count: MOCK_REQUESTS.filter(r => r.category === cat.value).length
-  })).sort((a, b) => b.count - a.count).slice(0, 5);
+  useEffect(() => {
+    fetchHomePageData();
+  }, []);
+
+  const fetchHomePageData = async () => {
+    try {
+      setLoading(true);
+
+      if (!supabase) {
+        // Fallback to mock data when Supabase isn't configured
+        const { MOCK_REQUESTS } = await import('@/lib/mockData');
+        setRequests(MOCK_REQUESTS.slice(0, 20));
+        
+        const stats = CATEGORIES.map(cat => ({
+          ...cat,
+          count: MOCK_REQUESTS.filter(r => r.category === cat.value).length
+        })).sort((a, b) => b.count - a.count).slice(0, 5);
+        setCategoryStats(stats);
+        return;
+      }
+
+      // Fetch recent requests
+      const { data: requestsData, error: requestsError } = await supabase
+        .from('Request')
+        .select('*')
+        .order('createdAt', { ascending: false })
+        .limit(20);
+
+      if (requestsError) throw requestsError;
+      setRequests(requestsData || []);
+
+      // Calculate category stats
+      const stats = CATEGORIES.map(cat => ({
+        ...cat,
+        count: (requestsData || []).filter(r => r.category === cat.value).length
+      })).sort((a, b) => b.count - a.count).slice(0, 5);
+      setCategoryStats(stats);
+    } catch (error) {
+      console.error('Error fetching homepage data:', error);
+      toast.error('Failed to load requests.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const urgentRequests = requests.filter(r => r.tag === 'URGENT').slice(0, 2);
+  const heartWarmingRequests = requests.filter(r => r.tag === 'HEARTWARMING').slice(0, 2);
+  const latestRequests = requests.slice(0, 4);
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-16">
@@ -133,22 +179,32 @@ export function HomePage({ onNavigate }: HomePageProps) {
       {/* Today's Highlights */}
       <section className="space-y-8">
         <h2 className="text-3xl font-semibold text-center text-foreground">Today's Highlights</h2>
-        <div className="grid md:grid-cols-2 gap-6">
-          {urgentRequests.map((request) => (
-            <RequestCard 
-              key={request.id}
-              request={request}
-              onClick={() => onNavigate('request-detail', request.id)}
-            />
-          ))}
-          {heartWarmingRequests.map((request) => (
-            <RequestCard 
-              key={request.id}
-              request={request}
-              onClick={() => onNavigate('request-detail', request.id)}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Loading highlights...</p>
+          </div>
+        ) : urgentRequests.length + heartWarmingRequests.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">No highlighted requests yet. Be the first to post one!</p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-6">
+            {urgentRequests.map((request) => (
+              <RequestCard 
+                key={request.id}
+                request={request}
+                onClick={() => onNavigate('request-detail', request.id)}
+              />
+            ))}
+            {heartWarmingRequests.map((request) => (
+              <RequestCard 
+                key={request.id}
+                request={request}
+                onClick={() => onNavigate('request-detail', request.id)}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Latest Requests */}
@@ -163,15 +219,31 @@ export function HomePage({ onNavigate }: HomePageProps) {
             View All
           </Button>
         </div>
-        <div className="grid md:grid-cols-2 gap-6">
-          {latestRequests.map((request) => (
-            <RequestCard 
-              key={request.id}
-              request={request}
-              onClick={() => onNavigate('request-detail', request.id)}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Loading requests...</p>
+          </div>
+        ) : latestRequests.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground mb-4">No requests yet. Be the first to ask the world!</p>
+            <Button
+              onClick={() => onNavigate('create')}
+              className="bg-primary hover:bg-accent text-primary-foreground"
+            >
+              Post First Request
+            </Button>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-6">
+            {latestRequests.map((request) => (
+              <RequestCard 
+                key={request.id}
+                request={request}
+                onClick={() => onNavigate('request-detail', request.id)}
+              />
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

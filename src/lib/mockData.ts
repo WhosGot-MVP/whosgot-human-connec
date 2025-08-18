@@ -10,6 +10,7 @@ export const MOCK_REQUESTS: Request[] = [
     category: 'THINGS' as Category,
     tag: 'HEARTWARMING' as Tag,
     location: 'Seattle, WA',
+    photoUrl: null,
     createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
@@ -20,6 +21,7 @@ export const MOCK_REQUESTS: Request[] = [
     category: 'THINGS' as Category,
     tag: 'URGENT' as Tag,
     location: 'Minneapolis, MN',
+    photoUrl: null,
     createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
@@ -30,6 +32,7 @@ export const MOCK_REQUESTS: Request[] = [
     category: 'ADVICE_SKILLS' as Category,
     tag: null,
     location: 'Portland, OR',
+    photoUrl: null,
     createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
@@ -40,6 +43,7 @@ export const MOCK_REQUESTS: Request[] = [
     category: 'HELP' as Category,
     tag: 'URGENT' as Tag,
     location: 'Phoenix, AZ',
+    photoUrl: null,
     createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
@@ -50,6 +54,7 @@ export const MOCK_REQUESTS: Request[] = [
     category: 'THINGS' as Category,
     tag: 'RARE_FIND' as Tag,
     location: 'Austin, TX',
+    photoUrl: null,
     createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
   },
   {
@@ -60,6 +65,7 @@ export const MOCK_REQUESTS: Request[] = [
     category: 'CONNECTIONS' as Category,
     tag: 'HEARTWARMING' as Tag,
     location: 'New York, NY',
+    photoUrl: null,
     createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
   },
 ];
