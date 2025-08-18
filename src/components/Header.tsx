@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useAuth } from './AuthProvider';
-import { SignInDialog } from './SignInDialog';
+import { useAuth } from '@/components/AuthProvider';
+import { SignInDialog } from '@/components/SignInDialog';
 import { useState } from 'react';
 
 interface HeaderProps {

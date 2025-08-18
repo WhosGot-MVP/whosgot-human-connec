@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useAuth } from './AuthProvider';
+import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
 
 interface SignInDialogProps {
