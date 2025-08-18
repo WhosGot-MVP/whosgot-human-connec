@@ -13,10 +13,7 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
   const { user, signOut } = useAuth();
   const [showSignIn, setShowSignIn] = useState(false);
 
-  const getInitials = (name: string | null, email: string) => {
-    if (name) {
-      return name.split(' ').map(n => n[0]).join('').toUpperCase();
-    }
+  const getInitials = (email: string) => {
     return email.substring(0, 2).toUpperCase();
   };
 
@@ -53,9 +50,9 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
               {user ? (
                 <div className="flex items-center gap-3">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="" alt={user.name || user.email} />
+                    <AvatarImage src="" alt={user.email || 'User'} />
                     <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                      {getInitials(user.name, user.email)}
+                      {getInitials(user.email || 'AN')}
                     </AvatarFallback>
                   </Avatar>
                   <Button 

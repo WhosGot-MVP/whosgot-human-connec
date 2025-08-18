@@ -59,8 +59,8 @@ To enable full database functionality:
 4. **Create environment file**:
    ```bash
    # Create .env file in project root
-   VITE_SUPABASE_URL=your_supabase_project_url
-   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   VITE_NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+   VITE_NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
 
 5. **Enable Email Auth** in Supabase Dashboard → Authentication → Providers

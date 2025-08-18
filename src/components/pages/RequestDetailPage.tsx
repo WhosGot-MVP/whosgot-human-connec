@@ -10,6 +10,7 @@ import { ArrowLeft, MapPin, Clock, Heart, Share } from '@phosphor-icons/react';
 import { supabase } from '@/lib/supabase';
 import { TAGS, Request, Response } from '@/lib/types';
 import { useAuth } from '@/components/AuthProvider';
+import { SignInDialog } from '@/components/SignInDialog';
 import { toast } from 'sonner';
 
 interface RequestDetailPageProps {
@@ -25,6 +26,7 @@ export function RequestDetailPage({ requestId, onNavigate }: RequestDetailPagePr
   const [request, setRequest] = useState<Request | null>(null);
   const [responses, setResponses] = useState<Response[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showSignIn, setShowSignIn] = useState(false);
 
   useEffect(() => {
     fetchRequestAndResponses();
@@ -323,7 +325,7 @@ export function RequestDetailPage({ requestId, onNavigate }: RequestDetailPagePr
                   Sign in to respond to this request and help someone out.
                 </p>
                 <Button 
-                  onClick={() => {/* This would trigger sign in dialog */}}
+                  onClick={() => setShowSignIn(true)}
                   className="bg-primary hover:bg-accent text-primary-foreground"
                 >
                   Sign In to Respond
@@ -333,6 +335,11 @@ export function RequestDetailPage({ requestId, onNavigate }: RequestDetailPagePr
           </CardContent>
         </Card>
       </div>
+      
+      <SignInDialog 
+        open={showSignIn} 
+        onOpenChange={setShowSignIn}
+      />
     </div>
   );
 }
