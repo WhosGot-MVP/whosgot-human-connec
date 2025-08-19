@@ -30,18 +30,20 @@ export function HomePage({ onNavigate }: HomePageProps) {
         // Fallback to mock data when Supabase isn't configured
         const { MOCK_REQUESTS } = await import('@/lib/mockData');
         setRequests(MOCK_REQUESTS.slice(0, 20));
-        
-        const stats = CATEGORIES.map(cat => ({
+
+        const stats = CATEGORIES.map((cat) => ({
           ...cat,
-          count: MOCK_REQUESTS.filter(r => r.category === cat.value).length
-        })).sort((a, b) => b.count - a.count).slice(0, 5);
+          count: MOCK_REQUESTS.filter((r) => r.category === cat.value).length,
+        }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5);
         setCategoryStats(stats);
         return;
       }
 
-      // Fetch recent requests
+      // Fetch recent requests (PLURAL)
       const { data: requestsData, error: requestsError } = await supabase
-        .from('Request')
+        .from('requests')
         .select('*')
         .order('createdAt', { ascending: false })
         .limit(20);
@@ -50,10 +52,12 @@ export function HomePage({ onNavigate }: HomePageProps) {
       setRequests(requestsData || []);
 
       // Calculate category stats
-      const stats = CATEGORIES.map(cat => ({
+      const stats = CATEGORIES.map((cat) => ({
         ...cat,
-        count: (requestsData || []).filter(r => r.category === cat.value).length
-      })).sort((a, b) => b.count - a.count).slice(0, 5);
+        count: (requestsData || []).filter((r) => r.category === cat.value).length,
+      }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
       setCategoryStats(stats);
     } catch (error) {
       console.error('Error fetching homepage data:', error);
@@ -63,8 +67,8 @@ export function HomePage({ onNavigate }: HomePageProps) {
     }
   };
 
-  const urgentRequests = requests.filter(r => r.tag === 'URGENT').slice(0, 2);
-  const heartWarmingRequests = requests.filter(r => r.tag === 'HEARTWARMING').slice(0, 2);
+  const urgentRequests = requests.filter((r) => r.tag === 'URGENT').slice(0, 2);
+  const heartWarmingRequests = requests.filter((r) => r.tag === 'HEARTWARMING').slice(0, 2);
   const latestRequests = requests.slice(0, 4);
 
   return (
@@ -77,7 +81,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
         <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
           WhosGot is a living map of human curiosity and kindness. A global space where every question meets a human response.
         </p>
-        <Button 
+        <Button
           size="lg"
           onClick={() => onNavigate('create')}
           className="bg-primary hover:bg-accent text-primary-foreground px-8 py-3 text-lg"
@@ -165,7 +169,11 @@ export function HomePage({ onNavigate }: HomePageProps) {
         <h2 className="text-3xl font-semibold text-center text-foreground">Most Wanted</h2>
         <div className="grid md:grid-cols-5 gap-4">
           {categoryStats.map((category) => (
-            <Card key={category.value} className="text-center hover:shadow-md transition-shadow cursor-pointer" onClick={() => onNavigate('requests')}>
+            <Card
+              key={category.value}
+              className="text-center hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => onNavigate('requests')}
+            >
               <CardContent className="p-4">
                 <h3 className="font-medium text-foreground mb-2">{category.label}</h3>
                 <p className="text-2xl font-bold text-primary">{category.count}</p>
@@ -190,14 +198,14 @@ export function HomePage({ onNavigate }: HomePageProps) {
         ) : (
           <div className="grid md:grid-cols-2 gap-6">
             {urgentRequests.map((request) => (
-              <RequestCard 
+              <RequestCard
                 key={request.id}
                 request={request}
                 onClick={() => onNavigate('request-detail', request.id)}
               />
             ))}
             {heartWarmingRequests.map((request) => (
-              <RequestCard 
+              <RequestCard
                 key={request.id}
                 request={request}
                 onClick={() => onNavigate('request-detail', request.id)}
@@ -226,17 +234,14 @@ export function HomePage({ onNavigate }: HomePageProps) {
         ) : latestRequests.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-muted-foreground mb-4">No requests yet. Be the first to ask the world!</p>
-            <Button
-              onClick={() => onNavigate('create')}
-              className="bg-primary hover:bg-accent text-primary-foreground"
-            >
+            <Button onClick={() => onNavigate('create')} className="bg-primary hover:bg-accent text-primary-foreground">
               Post First Request
             </Button>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 gap-6">
             {latestRequests.map((request) => (
-              <RequestCard 
+              <RequestCard
                 key={request.id}
                 request={request}
                 onClick={() => onNavigate('request-detail', request.id)}
@@ -248,3 +253,5 @@ export function HomePage({ onNavigate }: HomePageProps) {
     </div>
   );
 }
+
+        
