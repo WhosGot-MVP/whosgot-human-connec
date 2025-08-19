@@ -20,20 +20,22 @@ interface SignInDialogProps {
 export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn } = useAuth(); // <-- ВАЖНО: хук внутри компонента
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
-    
+
     setLoading(true);
     try {
-      await signIn(email);
-      toast.success('Welcome to WhosGot!');
+      await signIn(email); // внутри провайдера выставлен emailRedirectTo = window.location.origin
+      toast.info('Проверь почту — мы отправили magic link для входа.');
+      // здесь НЕ показываем "Welcome", пока пользователь реально не вернулся по ссылке
       onOpenChange(false);
       setEmail('');
-    } catch (error) {
-      toast.error('Failed to sign in. Please try again.');
+    } catch (err) {
+      console.error(err);
+      toast.error('Не удалось отправить ссылку. Попробуй ещё раз.');
     } finally {
       setLoading(false);
     }
@@ -47,10 +49,10 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
             Join WhosGot
           </DialogTitle>
           <DialogDescription className="text-center text-muted-foreground">
-            Enter your email to get started. We'll send you a magic link to sign in.
+            Введи email — мы отправим magic link для входа.
           </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -64,18 +66,18 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
               className="w-full"
             />
           </div>
-          
-          <Button 
-            type="submit" 
+
+          <Button
+            type="submit"
             className="w-full bg-primary hover:bg-accent text-primary-foreground"
             disabled={loading || !email}
           >
-            {loading ? 'Signing In...' : 'Sign In with Email'}
+            {loading ? 'Sending…' : 'Sign In with Email'}
           </Button>
-          
+
           <div className="text-center">
             <p className="text-xs text-muted-foreground">
-              By continuing, you agree to our Terms of Service and Privacy Policy.
+              Нажимая, ты соглашаешься с Terms of Service и Privacy Policy.
             </p>
           </div>
         </form>
@@ -83,3 +85,4 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
     </Dialog>
   );
 }
+
