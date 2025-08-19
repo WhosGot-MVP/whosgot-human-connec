@@ -30,51 +30,47 @@ export function RequestDetailPage({ requestId, onNavigate }: RequestDetailPagePr
 
   useEffect(() => {
     fetchRequestAndResponses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestId]);
 
   const fetchRequestAndResponses = async () => {
     try {
       setLoading(true);
-      
+
       if (!supabase) {
         // Fallback to mock data
         const { MOCK_REQUESTS, MOCK_RESPONSES } = await import('@/lib/mockData');
-        const mockRequest = MOCK_REQUESTS.find(r => r.id === requestId);
-        const mockResponses = MOCK_RESPONSES.filter(r => r.requestId === requestId);
-        
-        setRequest(mockRequest || null);
+        const mockRequest = MOCK_REQUESTS.find((r) => r.id === requestId) || null;
+        const mockResponses = MOCK_RESPONSES.filter((r) => r.requestId === requestId);
+        setRequest(mockRequest);
         setResponses(mockResponses);
         return;
       }
-      
-      // Fetch request
-      const { data: requestData, error: requestError } = await supabase
-        .from('Request')
-        .select('*')
-        .eq('id', requestId)
-        .single();
 
-      if (requestError) throw requestError;
-      setRequest(requestData);
+      // Загружаем параллельно
+      const [reqRes, respRes] = await Promise.all([
+        supabase.from('requests').select('*').eq('id', requestId).single(),
+        supabase
+          .from('responses')
+          .select('*')
+          .eq('requestId', requestId)
+          .order('createdAt', { ascending: true }),
+      ]);
 
-      // Fetch responses
-      const { data: responsesData, error: responsesError } = await supabase
-        .from('Response')
-        .select('*')
-        .eq('requestId', requestId)
-        .order('createdAt', { ascending: true });
+      if (reqRes.error) throw reqRes.error;
+      if (respRes.error) throw respRes.error;
 
-      if (responsesError) throw responsesError;
-      setResponses(responsesData || []);
-    } catch (error) {
+      setRequest(reqRes.data);
+      setResponses(respRes.data ?? []);
+    } catch (error: any) {
       console.error('Error fetching request:', error);
-      toast.error('Failed to load request details.');
+      toast.error(error?.message ?? 'Failed to load request details.');
     } finally {
       setLoading(false);
     }
   };
 
-  if (!request) {
+  if (!request && !loading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <p className="text-center text-muted-foreground">Request not found.</p>
@@ -87,16 +83,16 @@ export function RequestDetailPage({ requestId, onNavigate }: RequestDetailPagePr
     );
   }
 
-  const tagInfo = TAGS.find(t => t.value === request.tag);
+  const tagInfo = request ? TAGS.find((t) => t.value === request.tag) : undefined;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -115,7 +111,7 @@ export function RequestDetailPage({ requestId, onNavigate }: RequestDetailPagePr
     try {
       if (!supabase) {
         // Mock response for demo
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         toast.success('Your response has been sent! (Demo mode)');
         setResponseMessage('');
         setContactInfo('');
@@ -123,7 +119,7 @@ export function RequestDetailPage({ requestId, onNavigate }: RequestDetailPagePr
       }
 
       const { data, error } = await supabase
-        .from('Response')
+        .from('responses')
         .insert({
           requestId,
           message: responseMessage.trim(),
@@ -134,22 +130,22 @@ export function RequestDetailPage({ requestId, onNavigate }: RequestDetailPagePr
         .single();
 
       if (error) throw error;
-      
+
       toast.success('Your response has been sent!');
       setResponseMessage('');
       setContactInfo('');
-      
+
       // Refresh responses
       await fetchRequestAndResponses();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending response:', error);
-      toast.error('Failed to send response. Please try again.');
+      toast.error(error?.message ?? 'Failed to send response. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (loading) {
+  if (loading || !request) {
     return (
       <div className="container mx-auto px-4 py-8">
         <p className="text-center text-muted-foreground">Loading request...</p>
@@ -185,7 +181,7 @@ export function RequestDetailPage({ requestId, onNavigate }: RequestDetailPagePr
                     </Badge>
                   )}
                 </div>
-                
+
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   {request.location && (
                     <div className="flex items-center gap-1">
@@ -202,7 +198,7 @@ export function RequestDetailPage({ requestId, onNavigate }: RequestDetailPagePr
                   </Badge>
                 </div>
               </div>
-              
+
               <div className="flex gap-2">
                 <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
                   <Heart size={16} />
@@ -213,7 +209,7 @@ export function RequestDetailPage({ requestId, onNavigate }: RequestDetailPagePr
               </div>
             </div>
           </CardHeader>
-          
+
           <CardContent>
             {request.description && (
               <div className="prose prose-gray max-w-none">
@@ -231,7 +227,7 @@ export function RequestDetailPage({ requestId, onNavigate }: RequestDetailPagePr
             <h2 className="text-xl font-semibold text-foreground">
               Responses ({responses.length})
             </h2>
-            
+
             {responses.map((response) => (
               <Card key={response.id}>
                 <CardContent className="p-6">
@@ -242,7 +238,7 @@ export function RequestDetailPage({ requestId, onNavigate }: RequestDetailPagePr
                         {response.authorId?.substring(0, 2).toUpperCase() || 'AN'}
                       </AvatarFallback>
                     </Avatar>
-                    
+
                     <div className="flex-1 space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-foreground">
@@ -252,11 +248,11 @@ export function RequestDetailPage({ requestId, onNavigate }: RequestDetailPagePr
                           {formatDate(response.createdAt)}
                         </span>
                       </div>
-                      
+
                       <p className="text-foreground leading-relaxed">
                         {response.message}
                       </p>
-                      
+
                       {response.contact && (
                         <div className="bg-muted p-3 rounded-lg">
                           <p className="text-sm text-muted-foreground mb-1">Contact Info:</p>
@@ -276,13 +272,12 @@ export function RequestDetailPage({ requestId, onNavigate }: RequestDetailPagePr
           <CardHeader>
             <CardTitle className="text-lg">Respond to this Request</CardTitle>
             <CardDescription>
-              {user 
-                ? "Share how you can help or connect with this person."
-                : "Sign in to respond to this request."
-              }
+              {user
+                ? 'Share how you can help or connect with this person.'
+                : 'Sign in to respond to this request.'}
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent>
             {user ? (
               <form onSubmit={handleSubmitResponse} className="space-y-4">
@@ -297,7 +292,7 @@ export function RequestDetailPage({ requestId, onNavigate }: RequestDetailPagePr
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="contact">Contact Information (Optional)</Label>
                   <Input
@@ -310,9 +305,9 @@ export function RequestDetailPage({ requestId, onNavigate }: RequestDetailPagePr
                     Only share contact info you're comfortable making public.
                   </p>
                 </div>
-                
-                <Button 
-                  type="submit" 
+
+                <Button
+                  type="submit"
                   disabled={isSubmitting || !responseMessage.trim()}
                   className="bg-primary hover:bg-accent text-primary-foreground"
                 >
@@ -324,7 +319,7 @@ export function RequestDetailPage({ requestId, onNavigate }: RequestDetailPagePr
                 <p className="text-muted-foreground mb-4">
                   Sign in to respond to this request and help someone out.
                 </p>
-                <Button 
+                <Button
                   onClick={() => setShowSignIn(true)}
                   className="bg-primary hover:bg-accent text-primary-foreground"
                 >
@@ -335,11 +330,14 @@ export function RequestDetailPage({ requestId, onNavigate }: RequestDetailPagePr
           </CardContent>
         </Card>
       </div>
-      
-      <SignInDialog 
-        open={showSignIn} 
-        onOpenChange={setShowSignIn}
-      />
+
+      <SignInDialog open={showSignIn} onOpenChange={setShowSignIn} />
     </div>
   );
 }
+
+      
+
+      
+               
+      
