@@ -1,79 +1,113 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+// src/components/AuthProvider.tsx
+import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { User } from '@supabase/supabase-js';
+import type { User, Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: User | null;
+  session: Session | null;
+  loading: boolean;
   signIn: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
-  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
+  return ctx;
 }
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-export function AuthProvider({ children }: AuthProviderProps) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // ---------- DEMO fallback ----------
   useEffect(() => {
     if (!supabase) {
-      // Fallback auth when Supabase isn't configured
       const storedUser = localStorage.getItem('whosgot-demo-user');
       if (storedUser) {
         try {
-          const userData = JSON.parse(storedUser);
+          const u = JSON.parse(storedUser);
           setUser({
-            id: userData.id,
-            email: userData.email,
-            created_at: userData.created_at || new Date().toISOString(),
-            updated_at: userData.updated_at || new Date().toISOString(),
+            id: u.id,
+            email: u.email,
+            created_at: u.created_at || new Date().toISOString(),
+            updated_at: u.updated_at || new Date().toISOString(),
             aud: 'authenticated',
             role: 'authenticated',
           } as User);
-        } catch (error) {
-          console.error('Error parsing stored user:', error);
+        } catch {
           localStorage.removeItem('whosgot-demo-user');
         }
       }
       setLoading(false);
-      return;
     }
+  }, []);
+  // -----------------------------------
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+  // 1) первичная загрузка сессии
+  useEffect(() => {
+    if (!supabase) return;
+
+    let mounted = true;
+
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!mounted) return;
+      setSession(data.session ?? null);
+      setUser(data.session?.user ?? null);
       setLoading(false);
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // 2) обмен кода на сессию при возврате по magic link
+  useEffect(() => {
+    if (!supabase) return;
+
+    (async () => {
+      // Supabase добавляет ?code=...&type=...
+      if (typeof window !== 'undefined' && window.location.search.includes('code=')) {
+        try {
+          setLoading(true);
+          await supabase.auth.exchangeCodeForSession(window.location.href);
+          // подчистим URL от query
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } catch (e) {
+          console.error('exchangeCodeForSession failed', e);
+        } finally {
+          setLoading(false);
+        }
+      }
+    })();
+  }, []);
+
+  // 3) подписка на изменения сессии
+  useEffect(() => {
+    if (!supabase) return;
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession ?? null);
+      setUser(newSession?.user ?? null);
     });
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string) => {
     setLoading(true);
     try {
       if (!supabase) {
-        // Mock auth for demo
-        const mockUser = {
+        // DEMO режим
+        const mock = {
           id: `demo-user-${Date.now()}`,
           email,
           created_at: new Date().toISOString(),
@@ -81,23 +115,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
           aud: 'authenticated',
           role: 'authenticated',
         } as User;
-        
-        localStorage.setItem('whosgot-demo-user', JSON.stringify(mockUser));
-        setUser(mockUser);
+        localStorage.setItem('whosgot-demo-user', JSON.stringify(mock));
+        setUser(mock);
         return;
       }
 
+      const emailRedirectTo =
+        typeof window !== 'undefined'
+          ? `${window.location.origin}${window.location.pathname}`
+          : undefined;
+
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: {
-          emailRedirectTo: window.location.origin,
-        },
+        options: { emailRedirectTo },
       });
-      
       if (error) throw error;
-    } catch (error) {
-      console.error('Sign in error:', error);
-      throw error;
     } finally {
       setLoading(false);
     }
@@ -109,29 +141,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (!supabase) {
         localStorage.removeItem('whosgot-demo-user');
         setUser(null);
+        setSession(null);
         return;
       }
-
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-    } catch (error) {
-      console.error('Sign out error:', error);
-      throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  const value = {
-    user,
-    signIn,
-    signOut,
-    loading,
-  };
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({ user, session, loading, signIn, signOut }),
+    [user, session, loading]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
+
+
+     
+
+  
+
+      
+
+
+
+ 
