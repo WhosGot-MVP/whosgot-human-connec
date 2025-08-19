@@ -43,7 +43,7 @@ export function CreateRequestPage({ onNavigate }: CreateRequestPageProps) {
     try {
       if (!supabase) {
         // Mock submission for demo
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise((resolve) => setTimeout(resolve, 1500));
         toast.success('Your request has been posted! (Demo mode)');
         await fetchSimilarRequests();
         setShowSimilar(true);
@@ -51,7 +51,7 @@ export function CreateRequestPage({ onNavigate }: CreateRequestPageProps) {
       }
 
       const { data, error } = await supabase
-        .from('Request')
+        .from('requests')
         .insert({
           title: title.trim(),
           description: description.trim() || null,
@@ -65,9 +65,9 @@ export function CreateRequestPage({ onNavigate }: CreateRequestPageProps) {
         .single();
 
       if (error) throw error;
-      
+
       toast.success('Your request has been posted!');
-      
+
       // Fetch similar requests based on category and title keywords
       await fetchSimilarRequests();
       setShowSimilar(true);
@@ -84,21 +84,22 @@ export function CreateRequestPage({ onNavigate }: CreateRequestPageProps) {
       if (!supabase) {
         // Mock similar requests for demo
         const { MOCK_REQUESTS } = await import('@/lib/mockData');
-        const keywords = title.toLowerCase().split(' ').filter(word => word.length > 3);
-        const similar = MOCK_REQUESTS.filter(r => 
-          r.category === category || 
-          keywords.some(keyword => r.title.toLowerCase().includes(keyword))
+        const keywords = title.toLowerCase().split(' ').filter((word) => word.length > 3);
+        const similar = MOCK_REQUESTS.filter(
+          (r) =>
+            r.category === category ||
+            keywords.some((keyword) => r.title.toLowerCase().includes(keyword)),
         ).slice(0, 3);
         setSimilarRequests(similar);
         return;
       }
 
-      const keywords = title.toLowerCase().split(' ').filter(word => word.length > 3);
-      
+      const keywords = title.toLowerCase().split(' ').filter((word) => word.length > 3);
+
       const { data, error } = await supabase
-        .from('Request')
+        .from('requests')
         .select('*')
-        .or(`category.eq.${category},${keywords.map(keyword => `title.ilike.%${keyword}%`).join(',')}`)
+        .or(`category.eq.${category},${keywords.map((k) => `title.ilike.%${k}%`).join(',')}`)
         .order('createdAt', { ascending: false })
         .limit(3);
 
@@ -115,13 +116,11 @@ export function CreateRequestPage({ onNavigate }: CreateRequestPageProps) {
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <Card>
           <CardContent className="text-center py-12">
-            <h2 className="text-2xl font-semibold text-foreground mb-4">
-              Sign In to Post a Request
-            </h2>
+            <h2 className="text-2xl font-semibold text-foreground mb-4">Sign In to Post a Request</h2>
             <p className="text-muted-foreground mb-6">
               Join WhosGot to ask for help, share what you need, or connect with others.
             </p>
-            <Button 
+            <Button
               onClick={() => onNavigate('home')}
               className="bg-primary hover:bg-accent text-primary-foreground"
             >
@@ -142,20 +141,15 @@ export function CreateRequestPage({ onNavigate }: CreateRequestPageProps) {
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Sparkle size={32} className="text-primary" />
               </div>
-              <h2 className="text-2xl font-semibold text-foreground mb-2">
-                Request Posted Successfully!
-              </h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-2">Request Posted Successfully!</h2>
               <p className="text-muted-foreground mb-6">
                 Your request is now live. People from around the world can see it and respond.
               </p>
               <div className="flex gap-3 justify-center">
-                <Button 
-                  onClick={() => onNavigate('requests')}
-                  className="bg-primary hover:bg-accent text-primary-foreground"
-                >
+                <Button onClick={() => onNavigate('requests')} className="bg-primary hover:bg-accent text-primary-foreground">
                   View All Requests
                 </Button>
-                <Button 
+                <Button
                   variant="outline"
                   onClick={() => onNavigate('home')}
                   className="hover:bg-primary hover:text-primary-foreground"
@@ -180,22 +174,20 @@ export function CreateRequestPage({ onNavigate }: CreateRequestPageProps) {
               <CardContent>
                 <div className="space-y-4">
                   {similarRequests.map((request) => (
-                    <div 
-                      key={request.id} 
+                    <div
+                      key={request.id}
                       className="p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
                       onClick={() => onNavigate('request-detail', request.id)}
                     >
                       <h3 className="font-medium text-foreground mb-2">{request.title}</h3>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {request.description}
-                      </p>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{request.description}</p>
                       <div className="flex items-center gap-2 mt-2">
                         <Badge variant="outline" className="text-xs">
                           {request.category.replace('_', ' & ')}
                         </Badge>
                         {request.tag && (
                           <Badge variant="secondary" className="text-xs">
-                            {TAGS.find(t => t.value === request.tag)?.label}
+                            {TAGS.find((t) => t.value === request.tag)?.label}
                           </Badge>
                         )}
                       </div>
@@ -231,7 +223,7 @@ export function CreateRequestPage({ onNavigate }: CreateRequestPageProps) {
               Share what you're looking for. Someone in the WhosGot community might be able to help.
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
@@ -253,7 +245,7 @@ export function CreateRequestPage({ onNavigate }: CreateRequestPageProps) {
                       <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {CATEGORIES.map(cat => (
+                      {CATEGORIES.map((cat) => (
                         <SelectItem key={cat.value} value={cat.value}>
                           {cat.label}
                         </SelectItem>
@@ -264,13 +256,13 @@ export function CreateRequestPage({ onNavigate }: CreateRequestPageProps) {
 
                 <div className="space-y-2">
                   <Label htmlFor="tag">Tag (Optional)</Label>
-                  <Select value={tag || 'none'} onValueChange={(value) => setTag(value === 'none' ? '' : value as Tag)}>
+                  <Select value={tag || 'none'} onValueChange={(value) => setTag(value === 'none' ? '' : (value as Tag))}>
                     <SelectTrigger>
                       <SelectValue placeholder="Add a tag" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">No tag</SelectItem>
-                      {TAGS.map(tagOption => (
+                      {TAGS.map((tagOption) => (
                         <SelectItem key={tagOption.value} value={tagOption.value}>
                           {tagOption.label}
                         </SelectItem>
@@ -321,28 +313,24 @@ export function CreateRequestPage({ onNavigate }: CreateRequestPageProps) {
                   <h4 className="font-medium text-foreground">
                     {title || 'Your request title will appear here'}
                   </h4>
-                  {description && (
-                    <p className="text-sm text-muted-foreground line-clamp-3">
-                      {description}
-                    </p>
-                  )}
+                  {description && <p className="text-sm text-muted-foreground line-clamp-3">{description}</p>}
                   <div className="flex gap-2">
                     {category && (
                       <Badge variant="outline" className="text-xs">
-                        {CATEGORIES.find(c => c.value === category)?.label}
+                        {CATEGORIES.find((c) => c.value === category)?.label}
                       </Badge>
                     )}
                     {tag && (
                       <Badge variant="secondary" className="text-xs">
-                        {TAGS.find(t => t.value === tag)?.label}
+                        {TAGS.find((t) => t.value === tag)?.label}
                       </Badge>
                     )}
                   </div>
                 </div>
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={isSubmitting || !title.trim() || !category}
                 className="w-full bg-primary hover:bg-accent text-primary-foreground"
               >
@@ -355,3 +343,20 @@ export function CreateRequestPage({ onNavigate }: CreateRequestPageProps) {
     </div>
   );
 }
+
+        
+      
+    
+           
+                
+                  
+              
+                     
+         
+                
+                  
+                      
+        
+                  
+                   
+           
