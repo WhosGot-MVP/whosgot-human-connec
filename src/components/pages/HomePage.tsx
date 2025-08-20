@@ -132,10 +132,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
           </div>
         </div>
       </section>
-
   
-
-     
 
       <Divider />
 
@@ -217,49 +214,49 @@ export function HomePage({ onNavigate }: HomePageProps) {
 
       <Divider />
 
-      {/* Manifest — курсивом и мельче */}
-      {/* Manifest */}
+     {/* Manifest — полный текст, курсивом и помельче */}
+<section>
+  <Card>
+    <CardHeader>
+      <CardTitle>Manifest</CardTitle>
+      <CardDescription>Our philosophy</CardDescription>
+    </CardHeader>
+    <CardContent>
+      <div className="prose prose-gray max-w-none italic text-muted-foreground space-y-3">
+        <p>
+          <strong>The main strategic choice for WhosGot is clear:</strong> it’s not “just another network.”
+          It’s something truly new.
+        </p>
 
-      <section>
-        <Card>
-          <CardHeader>
-            <CardTitle>Manifest</CardTitle>
-            <CardDescription>Our philosophy</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="prose prose-gray max-w-none italic text-muted-foreground">
-              <p className="text-sm md:text-base">
-                <strong>The main strategic choice for WhosGot is clear:</strong> it’s not “just
-                another network.” It’s something truly new.
-              </p>
-              <p className="text-sm md:text-base">
-                <strong>Collective mind.</strong> Imagine millions of people leaving requests and
-                responses. Together they form a living base of human experience and kindness. Every
-                question is a point of pain or curiosity. Every answer — a piece of knowledge,
-                attention, or support.
-              </p>
-              <p className="text-sm md:text-base">
-                <strong>The spark of connection.</strong> Every request is a spark of interaction —
-                a chance for two people to meet and discover common ground.
-              </p>
-              <p className="text-sm md:text-base">
-                <strong>Status and equality.</strong> Not ratings and status games — the value is in
-                helping even one person.
-              </p>
-              <p className="text-sm md:text-base">
-                <strong>Psychology of participation.</strong> Instead of points, we use softer
-                recognition: simple thank-yous, “this answer helped,” and a private collection of
-                “traces of kindness.”
-              </p>
-              <p className="text-sm md:text-base">
-                <strong>The core idea.</strong> We are all the same humans. We need connection, a
-                helping hand, and the feeling of being needed.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
-
+        <p>
+          <strong>Collective mind.</strong> Imagine millions of people leaving requests and responses.
+          Together they form a living base of human experience and kindness. Every question is a point of
+          pain or curiosity. Every answer — a piece of knowledge, attention, or support. Over time, this can
+          become a collective brain — people connected not by ads and likes, but by the human need to help and be heard.
+        </p>
+       
+        <p>
+          <strong>Status and equality.</strong> There are two paths:
+        </p>
+        <ol className="list-decimal pl-5">
+          <li>
+            The classic social network → ratings, karma, stars, popularity. This breeds hierarchy —
+            who is “top” and who is “nobody.”
+          </li>
+          <li>
+            The WhosGot way → equality. No competition, no status games — the value is in helping even one person.
+          </li>
+        </ol>
+     
+        <p>
+          <strong>The core idea.</strong> We are all the same humans. We all need connection, a helping hand,
+          and the feeling of being needed. That is more powerful than any metric.
+        </p>
+      </div>
+    </CardContent>
+  </Card>
+</section>
+       
       <Divider />
 
       {/* Closing */}
