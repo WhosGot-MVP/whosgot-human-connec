@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/lib/supabase';
 import { Request } from '@/lib/types';
 import { RequestCard } from '@/components/RequestCard';
+import { DEMO_EXAMPLES } from '@/lib/mockData';
 
 interface HomePageProps {
   onNavigate: (page: any, requestId?: string) => void;
@@ -17,15 +18,18 @@ export function HomePage({ onNavigate }: HomePageProps) {
     (async () => {
       try {
         if (!supabase) {
+          // Fallback, когда Supabase не настроен — берём MOCK_REQUESTS
           const { MOCK_REQUESTS } = await import('@/lib/mockData');
           setRequests(MOCK_REQUESTS.slice(0, 8));
           return;
         }
+
         const { data, error } = await supabase
           .from('requests') // нижний регистр, множественное
           .select('*')
           .order('createdAt', { ascending: false })
           .limit(8);
+
         if (error) throw error;
         setRequests(data ?? []);
       } catch (e) {
@@ -35,32 +39,6 @@ export function HomePage({ onNavigate }: HomePageProps) {
       }
     })();
   }, []);
-
-  // Фолбэк-демо, если реальных заявок ещё нет
-  const demo: Request[] = [
-    {
-      id: 'demo-1',
-      authorId: 'demo',
-      title: 'Looking for a pen pal?',
-      description: 'I miss handwritten letters. Anyone up for monthly letters?',
-      category: 'CONNECTIONS' as any,
-      tag: 'HEARTWARMING' as any,
-      location: '',
-      createdAt: new Date().toISOString(),
-    } as any,
-    {
-      id: 'demo-2',
-      authorId: 'demo',
-      title: 'Old photo of our street (1998–2002)',
-      description: 'Trying to find a photo of our building before renovation.',
-      category: 'THINGS' as any,
-      tag: 'RARE_FIND' as any,
-      location: '',
-      createdAt: new Date().toISOString(),
-    } as any,
-  ];
-
-  const list = (requests?.length ? requests.slice(0, 6) : demo);
 
   return (
     <div className="container mx-auto px-4 py-10 max-w-5xl">
@@ -86,40 +64,64 @@ export function HomePage({ onNavigate }: HomePageProps) {
       </section>
 
       {/* Manifest */}
-      <section className="mt-12">
-        <Card>
-          <CardHeader>
-            <CardTitle>Manifest</CardTitle>
-            <CardDescription>Our philosophy</CardDescription>
-          </CardHeader>
-          <CardContent className="prose prose-gray max-w-none text-foreground">
-            <p><strong>The main strategic choice for WhosGot is clear:</strong> it’s not “just another network.” It’s something truly new.</p>
-            <p>
-              <strong>Collective mind.</strong> Imagine millions of people leaving requests and responses.
-              Together they form a living base of human experience and kindness. Every question is a point of
-              pain or curiosity. Every answer — a piece of knowledge, attention, or support. Over time, this can
-              become a collective brain — people connected not by ads and likes, but by the human need to help and be heard.
-            </p>
-            <p>
-              <strong>The spark of connection.</strong> Every request is more than a need — it’s a spark of interaction.
-              A chance for two people to meet, to start a conversation, to discover they were looking for the same thing
-              all along. A simple question can lead to friendship, partnership, even love — or to entire communities
-              forming around shared experiences.
-            </p>
-            <p>
-              <strong>Status and equality.</strong> The world has given us platforms for buying, for selling, for showing off.
-But it has not given us a place for the most human thing:
-to ask, and to be answered.
-the WhosGot way — equality. No competition, no status games — the value is in helping even one person.
-            </p>
-            <p>
-              <strong>Psychology of participation.</strong> People want their contribution noticed — but instead of stars or points,
-              WhosGot offers softer recognition: simple thank-yous, “this answer helped,” and a private collection of “traces of kindness.”
-            </p>
-            <p><strong>The core idea.</strong> We are all the same humans. We all need connection, a helping hand, and the feeling of being needed.</p>
-          </CardContent>
-        </Card>
-      </section>
+<section className="mt-12">
+  <Card>
+    <CardHeader>
+      <CardTitle>Manifest</CardTitle>
+      <CardDescription>Our philosophy</CardDescription>
+    </CardHeader>
+
+    {/* Мельче + курсивный текст манифеста */}
+    <CardContent>
+      <div className="italic text-muted-foreground text-sm md:text-[0.95rem] leading-relaxed space-y-3">
+        <p>
+          <span className="not-italic font-semibold text-foreground">
+            The main strategic choice for WhosGot is clear:
+          </span>{' '}
+          it’s not “just another network.” It’s something truly new.
+        </p>
+
+        <p>
+          <span className="not-italic font-semibold text-foreground">Collective mind.</span>{' '}
+          Imagine millions of people leaving requests and responses. Together they form a living
+          base of human experience and kindness. Every question is a point of pain or curiosity.
+          Every answer — a piece of knowledge, attention, or support. Over time, this can become
+          a collective brain — people connected not by ads and likes, but by the human need to help
+          and be heard.
+        </p>
+
+        <p>
+          <span className="not-italic font-semibold text-foreground">The spark of connection.</span>{' '}
+          Every request is more than a need — it’s a spark of interaction. A chance for two people
+          to meet, to start a conversation, to discover they were looking for the same thing all
+          along. A simple question can lead to friendship, partnership, even love — or to entire
+          communities forming around shared experiences.
+        </p>
+
+        <p>
+          <span className="not-italic font-semibold text-foreground">Status and equality.</span>{' '}
+          The world has given us platforms for buying, for selling, for showing off. But it has not
+          given us a place for the most human thing: to ask, and to be answered. The WhosGot way —
+          equality. No competition, no status games — the value is in helping even one person.
+        </p>
+
+        <p>
+          <span className="not-italic font-semibold text-foreground">Psychology of participation.</span>{' '}
+          People want their contribution noticed — but instead of stars or points, WhosGot offers
+          softer recognition: simple thank-yous, “this answer helped,” and a private collection of
+          “traces of kindness.”
+        </p>
+
+        <p>
+          <span className="not-italic font-semibold text-foreground">The core idea.</span>{' '}
+          We are all the same humans. We all need connection, a helping hand, and the feeling of
+          being needed.
+        </p>
+      </div>
+    </CardContent>
+  </Card>
+</section>
+
 
       {/* What it is + Why it matters */}
       <section className="mt-10 grid md:grid-cols-2 gap-6">
@@ -129,11 +131,10 @@ the WhosGot way — equality. No competition, no status games — the value is i
           </CardHeader>
           <CardContent className="text-muted-foreground">
             WhosGot is not a marketplace.
-It is not a social network.
-It is a bridge. A global heartbeat.
-Where someone in New York can ask,
-and someone in Tokyo, Lagos, London, or São Paulo can respond.
-
+            It is not a social network.
+            It is a bridge. A global heartbeat.
+            Where someone in New York can ask,
+            and someone in Tokyo, Lagos, London, or São Paulo can respond.
           </CardContent>
         </Card>
 
@@ -152,7 +153,31 @@ and someone in Tokyo, Lagos, London, or São Paulo can respond.
         </Card>
       </section>
 
-      {/* Requests demo */}
+      {/* Real Connections — всегда видимый блок с DEMO_EXAMPLES */}
+      <section className="mt-12 space-y-8">
+        <h2 className="text-3xl font-semibold text-center text-foreground">Real Connections</h2>
+        <p className="text-center text-muted-foreground mb-8">
+          <em>Demo cards — examples of the kind of connections that happen on WhosGot</em>
+        </p>
+        <div className="space-y-6">
+          {DEMO_EXAMPLES.map((ex, i) => (
+            <Card key={i} className="max-w-4xl mx-auto">
+              <CardContent className="p-6 space-y-4">
+                <p className="font-medium text-foreground">
+                  <span className="text-muted-foreground">Question:</span><br />
+                  “{ex.question}”
+                </p>
+                <p className="text-muted-foreground pl-4 border-l-2 border-primary/20">
+                  <span className="text-foreground font-medium">Answer:</span><br />
+                  “{ex.answer}”
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* Requests */}
       <section className="mt-12">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-xl font-semibold">Requests</h3>
@@ -165,9 +190,21 @@ and someone in Tokyo, Lagos, London, or São Paulo can respond.
           <div className="text-center py-8">
             <p className="text-muted-foreground">Loading…</p>
           </div>
+        ) : requests.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground mb-4">
+              No requests yet. Be the first to ask the world!
+            </p>
+            <Button
+              onClick={() => onNavigate('create')}
+              className="bg-primary hover:bg-accent text-primary-foreground"
+            >
+              Post First Request
+            </Button>
+          </div>
         ) : (
           <div className="grid md:grid-cols-2 gap-6">
-            {list.map((req) => (
+            {requests.slice(0, 8).map((req) => (
               <RequestCard
                 key={req.id}
                 request={req}
