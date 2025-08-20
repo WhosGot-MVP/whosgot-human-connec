@@ -107,8 +107,10 @@ export function HomePage({ onNavigate }: HomePageProps) {
               forming around shared experiences.
             </p>
             <p>
-              <strong>Status and equality.</strong> There are two paths: (1) classic social networks with ratings and popularity,
-              which breed hierarchy; (2) the WhosGot way — equality. No competition, no status games — the value is in helping even one person.
+              <strong>Status and equality.</strong> The world has given us platforms for buying, for selling, for showing off.
+But it has not given us a place for the most human thing:
+to ask, and to be answered.
+the WhosGot way — equality. No competition, no status games — the value is in helping even one person.
             </p>
             <p>
               <strong>Psychology of participation.</strong> People want their contribution noticed — but instead of stars or points,
@@ -126,9 +128,12 @@ export function HomePage({ onNavigate }: HomePageProps) {
             <CardTitle>What it is</CardTitle>
           </CardHeader>
           <CardContent className="text-muted-foreground">
-            WhosGot is a social platform where you can ask for something — from rare objects to old photos,
-            advice, or ideas. Others respond if they can help. You can browse open requests, add your own,
-            and connect with people who have what you’re looking for.
+            WhosGot is not a marketplace.
+It is not a social network.
+It is a bridge. A global heartbeat.
+Where someone in New York can ask,
+and someone in Tokyo, Lagos, london, or São Paulo can respond.
+
           </CardContent>
         </Card>
 
