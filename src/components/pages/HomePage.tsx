@@ -135,25 +135,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
 
       <Divider />
 
-      {/* Most Wanted */}
-      <section>
-        <h2 className="text-center text-2xl font-semibold text-foreground">Most Wanted</h2>
-        <div className="mt-6 grid gap-4 md:grid-cols-5">
-          {categoryStats.map((cat) => (
-            <Card
-              key={cat.value}
-              className="cursor-pointer text-center transition-shadow hover:shadow-md"
-              onClick={() => onNavigate('requests')}
-            >
-              <CardContent className="p-4">
-                <h3 className="mb-2 font-medium text-foreground">{cat.label}</h3>
-                <p className="text-2xl font-bold text-primary">{cat.count}</p>
-                <p className="text-sm text-muted-foreground">requests</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
+     
 
       <Divider />
 
@@ -182,7 +164,25 @@ export function HomePage({ onNavigate }: HomePageProps) {
       </section>
 
       <Divider />
-
+ {/* Most Wanted */}
+      <section>
+        <h2 className="text-center text-2xl font-semibold text-foreground">Most Wanted</h2>
+        <div className="mt-6 grid gap-4 md:grid-cols-5">
+          {categoryStats.map((cat) => (
+            <Card
+              key={cat.value}
+              className="cursor-pointer text-center transition-shadow hover:shadow-md"
+              onClick={() => onNavigate('requests')}
+            >
+              <CardContent className="p-4">
+                <h3 className="mb-2 font-medium text-foreground">{cat.label}</h3>
+                <p className="text-2xl font-bold text-primary">{cat.count}</p>
+                <p className="text-sm text-muted-foreground">requests</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
       {/* Requests preview */}
       <section>
         <div className="mb-4 flex items-center justify-between">
