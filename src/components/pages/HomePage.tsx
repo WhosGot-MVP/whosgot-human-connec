@@ -132,7 +132,7 @@ the WhosGot way — equality. No competition, no status games — the value is i
 It is not a social network.
 It is a bridge. A global heartbeat.
 Where someone in New York can ask,
-and someone in Tokyo, Lagos, london, or São Paulo can respond.
+and someone in Tokyo, Lagos, London, or São Paulo can respond.
 
           </CardContent>
         </Card>
