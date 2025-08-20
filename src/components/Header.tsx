@@ -22,13 +22,18 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
       <header className="border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <button 
+            {/* Logo + slogan */}
+            <button
               onClick={() => onNavigate('home')}
-              className="text-2xl font-bold text-primary hover:text-accent transition-colors"
+              className="text-2xl font-bold text-primary hover:text-accent transition-colors leading-none text-left"
             >
               WhosGot
+              <span className="block text-xs text-muted-foreground -mt-0.5">
+                Because asking is human.
+              </span>
             </button>
-            
+
+            {/* Desktop nav */}
             <nav className="hidden md:flex items-center gap-6">
               <button
                 onClick={() => onNavigate('requests')}
@@ -36,7 +41,7 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
                   currentPage === 'requests' ? 'text-primary' : 'text-muted-foreground'
                 }`}
               >
-                Most Wanted
+                Browse Requests
               </button>
               <Button
                 onClick={() => onNavigate('create')}
@@ -46,6 +51,7 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
               </Button>
             </nav>
 
+            {/* Auth / profile */}
             <div className="flex items-center gap-4">
               {user ? (
                 <div className="flex items-center gap-3">
@@ -55,8 +61,8 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
                       {getInitials(user.email || 'AN')}
                     </AvatarFallback>
                   </Avatar>
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     size="sm"
                     onClick={signOut}
                     className="text-muted-foreground hover:text-foreground"
@@ -85,8 +91,8 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
               )}
             </div>
           </div>
-          
-          {/* Mobile navigation */}
+
+          {/* Mobile nav */}
           <div className="md:hidden mt-4 flex gap-3">
             <button
               onClick={() => onNavigate('requests')}
@@ -94,7 +100,7 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
                 currentPage === 'requests' ? 'text-primary' : 'text-muted-foreground'
               }`}
             >
-              Most Wanted
+              Browse Requests
             </button>
             <Button
               size="sm"
@@ -106,11 +112,8 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
           </div>
         </div>
       </header>
-      
-      <SignInDialog 
-        open={showSignIn} 
-        onOpenChange={setShowSignIn}
-      />
+
+      <SignInDialog open={showSignIn} onOpenChange={setShowSignIn} />
     </>
   );
 }
