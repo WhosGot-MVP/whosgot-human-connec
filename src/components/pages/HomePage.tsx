@@ -219,63 +219,6 @@ export function HomePage({ onNavigate }: HomePageProps) {
 
       {/* Manifest — курсивом и мельче */}
       {/* Manifest */}
-<section className="mt-12">
-  <Card>
-    <CardHeader>
-      <CardTitle>Manifest</CardTitle>
-      <CardDescription>Our philosophy</CardDescription>
-    </CardHeader>
-
-    {/* Мельче + курсив; ключевые фразы — некурсивные */}
-    <CardContent>
-      <div className="italic text-muted-foreground text-sm md:text-[0.95rem] leading-relaxed space-y-3">
-        <p>
-          <span className="not-italic font-semibold text-foreground">
-            The main strategic choice for WhosGot is clear:
-          </span>{' '}
-          it’s not “just another network.” It’s something truly new.
-        </p>
-
-        <p>
-          <span className="not-italic font-semibold text-foreground">Collective mind.</span>{' '}
-          Imagine millions of people leaving requests and responses. Together they form a living
-          base of human experience and kindness. Every question is a point of pain or curiosity.
-          Every answer — a piece of knowledge, attention, or support. Over time, this can become
-          a collective brain — people connected not by ads and likes, but by the human need to help
-          and be heard.
-        </p>
-
-        <p>
-          <span className="not-italic font-semibold text-foreground">The spark of connection.</span>{' '}
-          Every request is more than a need — it’s a spark of interaction. A chance for two people
-          to meet, to start a conversation, to discover they were looking for the same thing all
-          along. A simple question can lead to friendship, partnership, even love — or to entire
-          communities forming around shared experiences.
-        </p>
-
-        <p>
-          <span className="not-italic font-semibold text-foreground">Status and equality.</span>{' '}
-          The world has given us platforms for buying, for selling, for showing off. But it has not
-          given us a place for the most human thing: to ask, and to be answered. The WhosGot way —
-          equality. No competition, no status games — the value is in helping even one person.
-        </p>
-
-        <p>
-          <span className="not-italic font-semibold text-foreground">Psychology of participation.</span>{' '}
-          People want their contribution noticed — but instead of stars or points, WhosGot offers
-          softer recognition: simple thank-yous, “this answer helped,” and a private collection of
-          “traces of kindness.”
-        </p>
-
-        <p>
-          <span className="not-italic font-semibold text-foreground">The core idea.</span>{' '}
-          We are all the same humans. We all need connection, a helping hand, and the feeling of
-          being needed.
-        </p>
-      </div>
-    </CardContent>
-  </Card>
-</section>
 
       <section>
         <Card>
