@@ -1,49 +1,54 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Request } from '@/lib/types';
-import { CATEGORIES } from '@/lib/types';
-import { RequestCard } from '@/components/RequestCard';
-import { supabase } from '@/lib/supabase';
-import { DEMO_EXAMPLES } from '@/lib/mockData';
-import { PencilSimple, ChatCircle, HandHeart } from '@phosphor-icons/react';
+import { useEffect, useMemo, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Request } from '@/lib/types'
+import { CATEGORIES } from '@/lib/types'
+import { RequestCard } from '@/components/RequestCard'
+import { DEMO_EXAMPLES } from '@/lib/mockData'
+import { PencilSimple, ChatCircle, HandHeart } from '@phosphor-icons/react'
+import { fetchRequestsWithUser, type RequestRow } from '@/api/requests'
 
 interface HomePageProps {
-  onNavigate: (page: any, requestId?: string) => void;
+  onNavigate: (page: any, requestId?: string) => void
 }
 
 export function HomePage({ onNavigate }: HomePageProps) {
-  const [requests, setRequests] = useState<Request[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [requests, setRequests] = useState<Request[]>([])
+  const [loading, setLoading] = useState(true)
 
   // Тонкий разделитель между секциями
-  const Divider = () => <div className="my-12 h-px bg-border" />;
+  const Divider = () => <div className="my-12 h-px bg-border" />
 
   useEffect(() => {
     (async () => {
       try {
-        if (!supabase) {
-          const { MOCK_REQUESTS } = await import('@/lib/mockData');
-          setRequests(MOCK_REQUESTS.slice(0, 8));
-          return;
-        }
-        const { data, error } = await supabase
-          .from('requests') // множественное, нижний регистр
-          .select('*')
-          .order('createdAt', { ascending: false })
-          .limit(8);
+        // 1) читаем из VIEW, где уже есть display_name / user_handle
+        const rows: RequestRow[] = await fetchRequestsWithUser()
 
-        if (error) throw error;
-        setRequests(data ?? []);
+        // 2) приводим к типу Request, чтобы карточки работали как раньше
+        const normalized: Request[] = rows.map((r: any) => ({
+          id: r.id,
+          // показываем имя автора: кладём его в authorId (карточка читает authorId)
+          authorId: r.display_name || r.user_handle || 'Someone',
+          title: r.title ?? '',
+          description: r.details ?? r.description ?? '',
+          category: (r.category as any) ?? ('' as any),
+          tag: (r.tag as any) ?? ('' as any),
+          location: r.location ?? '',
+          // из БД приходит created_at (snake_case)
+          createdAt: r.created_at ?? new Date().toISOString(),
+        }))
+
+        setRequests(normalized.slice(0, 8))
       } catch (err) {
-        console.error('HomePage load error:', err);
-        const { MOCK_REQUESTS } = await import('@/lib/mockData');
-        setRequests(MOCK_REQUESTS.slice(0, 8));
+        console.error('HomePage load error:', err)
+        const { MOCK_REQUESTS } = await import('@/lib/mockData')
+        setRequests(MOCK_REQUESTS.slice(0, 8))
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    })();
-  }, []);
+    })()
+  }, [])
 
   // Фолбэк-превью, если своих заявок нет
   const demoPreview: Request[] = [
@@ -67,18 +72,18 @@ export function HomePage({ onNavigate }: HomePageProps) {
       location: '',
       createdAt: new Date().toISOString(),
     } as any,
-  ];
+  ]
 
-  const list = requests.length ? requests.slice(0, 6) : demoPreview;
+  const list = requests.length ? requests.slice(0, 6) : demoPreview
 
   // Подсчёт «Most Wanted» по категориям (из реальных или демо-превью)
   const categoryStats = useMemo(() => {
-    const base = requests.length ? requests : demoPreview;
+    const base = requests.length ? requests : demoPreview
     return CATEGORIES.map((cat) => ({
       ...cat,
       count: base.filter((r) => (r.category as any) === cat.value).length,
-    }));
-  }, [requests]);
+    }))
+  }, [requests])
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-10">
@@ -132,7 +137,6 @@ export function HomePage({ onNavigate }: HomePageProps) {
           </div>
         </div>
       </section>
-  
 
       <Divider />
 
@@ -161,7 +165,8 @@ export function HomePage({ onNavigate }: HomePageProps) {
       </section>
 
       <Divider />
- {/* Most Wanted */}
+
+      {/* Most Wanted */}
       <section>
         <h2 className="text-center text-2xl font-semibold text-foreground">Most Wanted</h2>
         <div className="mt-6 grid gap-4 md:grid-cols-5">
@@ -180,6 +185,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
           ))}
         </div>
       </section>
+
       {/* Requests preview */}
       <section>
         <div className="mb-4 flex items-center justify-between">
@@ -214,49 +220,49 @@ export function HomePage({ onNavigate }: HomePageProps) {
 
       <Divider />
 
-     {/* Manifest — полный текст, курсивом и помельче */}
-<section>
-  <Card>
-    <CardHeader>
-      <CardTitle>Manifest</CardTitle>
-      <CardDescription>Our philosophy</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <div className="prose prose-gray max-w-none italic text-muted-foreground space-y-3">
-        <p>
-          <strong>The main strategic choice for WhosGot is clear:</strong> it’s not “just another network.”
-          It’s something truly new.
-        </p>
+      {/* Manifest — полный текст, курсивом и помельче */}
+      <section>
+        <Card>
+          <CardHeader>
+            <CardTitle>Manifest</CardTitle>
+            <CardDescription>Our philosophy</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="prose prose-gray max-w-none italic text-muted-foreground space-y-3">
+              <p>
+                <strong>The main strategic choice for WhosGot is clear:</strong> it’s not “just another network.”
+                It’s something truly new.
+              </p>
 
-        <p>
-          <strong>Collective mind.</strong> Imagine millions of people leaving requests and responses.
-          Together they form a living base of human experience and kindness. Every question is a point of
-          pain or curiosity. Every answer — a piece of knowledge, attention, or support. Over time, this can
-          become a collective brain — people connected not by ads and likes, but by the human need to help and be heard.
-        </p>
-       
-        <p>
-          <strong>Status and equality.</strong> There are two paths:
-        </p>
-        <ol className="list-decimal pl-5">
-          <li>
-            The classic social network → ratings, karma, stars, popularity. This breeds hierarchy —
-            who is “top” and who is “nobody.”
-          </li>
-          <li>
-            The WhosGot way → equality. No competition, no status games — the value is in helping even one person.
-          </li>
-        </ol>
-     
-        <p>
-          <strong>The core idea.</strong> We are all the same humans. We all need connection, a helping hand,
-          and the feeling of being needed. That is more powerful than any metric.
-        </p>
-      </div>
-    </CardContent>
-  </Card>
-</section>
-       
+              <p>
+                <strong>Collective mind.</strong> Imagine millions of people leaving requests and responses.
+                Together they form a living base of human experience and kindness. Every question is a point of
+                pain or curiosity. Every answer — a piece of knowledge, attention, or support. Over time, this can
+                become a collective brain — people connected not by ads and likes, but by the human need to help and be heard.
+              </p>
+
+              <p>
+                <strong>Status and equality.</strong> There are two paths:
+              </p>
+              <ol className="list-decimal pl-5">
+                <li>
+                  The classic social network → ratings, karma, stars, popularity. This breeds hierarchy —
+                  who is “top” and who is “nobody.”
+                </li>
+                <li>
+                  The WhosGot way → equality. No competition, no status games — the value is in helping even one person.
+                </li>
+              </ol>
+
+              <p>
+                <strong>The core idea.</strong> We are all the same humans. We all need connection, a helping hand,
+                and the feeling of being needed. That is more powerful than any metric.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
       <Divider />
 
       {/* Closing */}
@@ -273,5 +279,5 @@ export function HomePage({ onNavigate }: HomePageProps) {
         </div>
       </section>
     </div>
-  );
+  )
 }
