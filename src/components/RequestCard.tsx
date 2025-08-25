@@ -1,87 +1,64 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { MapPin, Clock } from '@phosphor-icons/react';
-import { Request } from '@/lib/types';
-import { TAGS } from '@/lib/types';
+import React from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Request } from '@/lib/types'
 
-interface RequestCardProps {
-  request: Request;
-  onClick: () => void;
-  showFullDescription?: boolean;
+type Props = {
+  request: Request
+  onClick?: () => void
 }
 
-export function RequestCard({ request, onClick, showFullDescription = false }: RequestCardProps) {
-  const tagInfo = TAGS.find(t => t.value === request.tag);
-  
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (diffInDays === 0) return 'Today';
-    if (diffInDays === 1) return 'Yesterday';
-    if (diffInDays < 7) return `${diffInDays} days ago`;
-    return date.toLocaleDateString();
-  };
+function formatDate(iso?: string) {
+  if (!iso) return ''
+  try {
+    const d = new Date(iso)
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+  } catch {
+    return ''
+  }
+}
 
-  const truncateDescription = (text: string | null, maxLength: number = 120) => {
-    if (!text) return '';
-    if (showFullDescription || text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
-  };
+export const RequestCard: React.FC<Props> = ({ request, onClick }) => {
+  const author = request.authorId || 'Someone' // <- здесь показываем имя
+  const created = formatDate(request.createdAt)
 
   return (
-    <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer group" onClick={onClick}>
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-3">
-          <CardTitle className="text-lg font-semibold text-foreground leading-snug group-hover:text-primary transition-colors">
-            {request.title}
-          </CardTitle>
-          {tagInfo && (
-            <Badge variant="secondary" className={`${tagInfo.color} shrink-0 text-xs`}>
-              {tagInfo.label}
-            </Badge>
-          )}
+    <Card
+      onClick={onClick}
+      className={`cursor-pointer transition-shadow hover:shadow-md ${onClick ? '' : 'cursor-default'}`}
+    >
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg">{request.title}</CardTitle>
+        <div className="text-xs text-muted-foreground">
+          by <span className="font-medium text-foreground">{author}</span>
+          {created ? <span> · {created}</span> : null}
         </div>
       </CardHeader>
-      
-      <CardContent className="pt-0 space-y-4">
-        {request.description && (
-          <CardDescription className="text-muted-foreground leading-relaxed">
-            {truncateDescription(request.description)}
-          </CardDescription>
+      <CardContent className="pt-0">
+        {request.description ? (
+          <p className="line-clamp-3 text-sm text-foreground/80">{request.description}</p>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">No description.</p>
         )}
-        
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <div className="flex items-center gap-4">
-            {request.location && (
-              <div className="flex items-center gap-1">
-                <MapPin size={14} />
-                <span>{request.location}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-1">
-              <Clock size={14} />
-              <span>{formatDate(request.createdAt)}</span>
-            </div>
-          </div>
-          
-          <Badge variant="outline" className="text-xs">
-            {request.category.replace('_', ' & ')}
-          </Badge>
-        </div>
-        
-        <div className="pt-2">
-          <Button 
-            variant="ghost" 
-            size="sm"
-            className="text-primary hover:text-accent hover:bg-primary/5 p-0 h-auto font-medium"
-          >
-            View Request →
-          </Button>
+
+        {/* опционально покажем категорию/тег, если они есть */}
+        <div className="mt-3 flex flex-wrap gap-2">
+          {request.category ? (
+            <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
+              {String(request.category)}
+            </span>
+          ) : null}
+          {request.tag ? (
+            <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
+              {String(request.tag)}
+            </span>
+          ) : null}
+          {request.location ? (
+            <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
+              {request.location}
+            </span>
+          ) : null}
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }
