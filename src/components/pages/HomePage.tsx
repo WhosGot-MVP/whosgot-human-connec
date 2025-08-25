@@ -1,4 +1,4 @@
-iimport { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Request } from '@/lib/types'
@@ -6,7 +6,7 @@ import { CATEGORIES } from '@/lib/types'
 import { RequestCard } from '@/components/RequestCard'
 import { DEMO_EXAMPLES } from '@/lib/mockData'
 import { PencilSimple, ChatCircle, HandHeart } from '@phosphor-icons/react'
-import { fetchRequestsWithUser, type RequestRow, isUUID } from '@/api/requests' // ← добавили isUUID
+import { fetchRequestsWithUser, type RequestRow, isUUID } from '@/api/requests'
 
 interface HomePageProps {
   onNavigate: (page: any, requestId?: string) => void
@@ -19,7 +19,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
   const Divider = () => <div className="my-12 h-px bg-border" />
 
   useEffect(() => {
-    (async () => {
+    ;(async () => {
       try {
         const rows: RequestRow[] = await fetchRequestsWithUser()
         const normalized: Request[] = rows.map((r: any) => ({
@@ -131,7 +131,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
 
       <Divider />
 
-      {/* Real Connections — демо карточки всегда */}
+      {/* Real Connections — demo cards */}
       <section>
         <h2 className="text-center text-2xl font-semibold text-foreground">Real Connections</h2>
         <p className="mb-6 text-center text-sm text-muted-foreground">
@@ -225,22 +225,15 @@ export function HomePage({ onNavigate }: HomePageProps) {
           <CardContent>
             <div className="prose prose-gray max-w-none italic text-muted-foreground space-y-3">
               <p>
-                <strong>The main strategic choice for WhosGot is clear:</strong> it’s not “just another network.”
-                It’s something truly new.
+                <strong>The main strategic choice for WhosGot is clear:</strong> it’s not “just another
+                network.” It’s something truly new.
               </p>
               <p>
-                <strong>Collective mind.</strong> Imagine millions of people leaving requests and responses.
-                Together they form a living base of human experience and kindness. Every question is a point of
-                pain or curiosity. Every answer — a piece of knowledge, attention, or support. Over time, this can
-                become a collective brain — people connected not by ads and likes, but by the human need to help and be heard.
+                <strong>Collective mind.</strong> Imagine millions of people leaving requests and responses…
               </p>
               <p>
-                <strong>Status and equality.</strong> There are two paths:
+                <strong>Status and equality.</strong> There are two paths…
               </p>
-              <ol className="list-decimal pl-5">
-                <li>The classic social network → ratings, karma, stars, popularity…</li>
-                <li>The WhosGot way → equality…</li>
-              </ol>
               <p>
                 <strong>The core idea.</strong> We are all the same humans…
               </p>
@@ -267,4 +260,3 @@ export function HomePage({ onNavigate }: HomePageProps) {
     </div>
   )
 }
-
