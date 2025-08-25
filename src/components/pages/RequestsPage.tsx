@@ -1,103 +1,117 @@
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { MagnifyingGlass, Funnel } from '@phosphor-icons/react';
-import { supabase } from '@/lib/supabase';
-import { CATEGORIES, TAGS, Category, Tag, Request } from '@/lib/types';
-import { RequestCard } from '@/components/RequestCard';
-import { toast } from 'sonner';
+import { useState, useEffect, useMemo } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { MagnifyingGlass, Funnel } from '@phosphor-icons/react'
+import { supabase } from '@/lib/supabase'
+import { CATEGORIES, TAGS, Category, Tag, Request } from '@/lib/types'
+import { RequestCard } from '@/components/RequestCard'
+import { toast } from 'sonner'
+import { fetchRequestsWithUser, type RequestRow, isUUID } from '@/api/requests'
 
 interface RequestsPageProps {
-  onNavigate: (page: any, requestId?: string) => void;
+  onNavigate: (page: any, requestId?: string) => void
 }
 
+const PAGE_SIZE = 20
+
 export function RequestsPage({ onNavigate }: RequestsPageProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<Category | 'all'>('all');
-  const [selectedTag, setSelectedTag] = useState<Tag | 'all'>('all');
-  const [locationFilter, setLocationFilter] = useState('');
-  const [requests, setRequests] = useState<Request[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState<Category | 'all'>('all')
+  const [selectedTag, setSelectedTag] = useState<Tag | 'all'>('all')
+  const [locationFilter, setLocationFilter] = useState('')
+
+  // все записи (для фильтрации)
+  const [allRows, setAllRows] = useState<Request[]>([])
+  // видимая "страница"
+  const [visible, setVisible] = useState<Request[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
 
   useEffect(() => {
-    fetchRequests();
-  }, []);
+    (async () => {
+      try {
+        setLoading(true)
 
-  const fetchRequests = async (offset = 0) => {
-    try {
-      if (offset === 0) setLoading(true);
-      else setLoadingMore(true);
-
-      if (!supabase) {
-        // Fallback to mock data
-        const { MOCK_REQUESTS } = await import('@/lib/mockData');
-        const mockData = MOCK_REQUESTS.slice(offset, offset + 20);
-        
-        if (offset === 0) {
-          setRequests(mockData);
-        } else {
-          setRequests(prev => [...prev, ...mockData]);
+        // DEMO режим — берём мок-данные
+        if (!supabase) {
+          const { MOCK_REQUESTS } = await import('@/lib/mockData')
+          const items = [...MOCK_REQUESTS] as Request[]
+          setAllRows(items)
+          setVisible(items.slice(0, PAGE_SIZE))
+          setHasMore(items.length > PAGE_SIZE)
+          return
         }
-        
-        setHasMore(mockData.length === 20);
-        return;
+
+        // Прод — читаем из VIEW с именами
+        const rows: RequestRow[] = await fetchRequestsWithUser()
+        const normalized: Request[] = rows.map((r: any) => ({
+          id: r.id,
+          authorId: r.display_name || r.user_handle || 'Someone',
+          title: r.title ?? '',
+          description: r.details ?? r.description ?? '',
+          category: (r.category as any) ?? ('' as any),
+          tag: (r.tag as any) ?? ('' as any),
+          location: r.location ?? '',
+          createdAt: r.created_at ?? new Date().toISOString(),
+        }))
+
+        setAllRows(normalized)
+        setVisible(normalized.slice(0, PAGE_SIZE))
+        setHasMore(normalized.length > PAGE_SIZE)
+      } catch (e) {
+        console.error('Error fetching requests:', e)
+        toast.error('Failed to load requests. Please try again.')
+      } finally {
+        setLoading(false)
       }
+    })()
+  }, [])
 
-      const { data, error } = await supabase
-        .from('Request')
-        .select('*')
-        .order('createdAt', { ascending: false })
-        .range(offset, offset + 19);
+  // Фильтры применяем к источнику:
+  // - если фильтры активны → ко всем данным
+  // - если нет → к текущей странице (видимым)
+  const hasActiveFilters =
+    !!searchTerm || selectedCategory !== 'all' || selectedTag !== 'all' || !!locationFilter
 
-      if (error) throw error;
+  const source: Request[] = hasActiveFilters ? allRows : visible
 
-      if (offset === 0) {
-        setRequests(data || []);
-      } else {
-        setRequests(prev => [...prev, ...(data || [])]);
-      }
+  const filteredRequests = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase()
+    const loc = locationFilter.trim().toLowerCase()
 
-      setHasMore((data || []).length === 20);
-    } catch (error) {
-      console.error('Error fetching requests:', error);
-      toast.error('Failed to load requests. Please try again.');
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  };
+    return source.filter((r) => {
+      const matchesSearch =
+        !term ||
+        r.title.toLowerCase().includes(term) ||
+        (r.description?.toLowerCase().includes(term) ?? false)
 
-  const loadMoreRequests = () => {
-    if (!loadingMore && hasMore) {
-      fetchRequests(requests.length);
-    }
-  };
+      const matchesCategory = selectedCategory === 'all' || r.category === selectedCategory
+      const matchesTag = selectedTag === 'all' || r.tag === selectedTag
 
-  const filteredRequests = requests.filter(request => {
-    const matchesSearch = searchTerm === '' || 
-      request.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (request.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
-    
-    const matchesCategory = selectedCategory === 'all' || request.category === selectedCategory;
-    const matchesTag = selectedTag === 'all' || request.tag === selectedTag;
-    const matchesLocation = locationFilter === '' || 
-      (request.location?.toLowerCase().includes(locationFilter.toLowerCase()) ?? false);
+      const matchesLocation = !loc || (r.location?.toLowerCase().includes(loc) ?? false)
 
-    return matchesSearch && matchesCategory && matchesTag && matchesLocation;
-  });
+      return matchesSearch && matchesCategory && matchesTag && matchesLocation
+    })
+  }, [source, searchTerm, selectedCategory, selectedTag, locationFilter])
 
   const clearFilters = () => {
-    setSearchTerm('');
-    setSelectedCategory('all');
-    setSelectedTag('all');
-    setLocationFilter('');
-  };
+    setSearchTerm('')
+    setSelectedCategory('all')
+    setSelectedTag('all')
+    setLocationFilter('')
+  }
 
-  const hasActiveFilters = searchTerm || selectedCategory !== 'all' || selectedTag !== 'all' || locationFilter;
+  const loadMore = () => {
+    if (loadingMore || !hasMore) return
+    setLoadingMore(true)
+    const next = allRows.slice(0, visible.length + PAGE_SIZE)
+    setVisible(next)
+    setHasMore(next.length < allRows.length)
+    setLoadingMore(false)
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -124,10 +138,13 @@ export function RequestsPage({ onNavigate }: RequestsPageProps) {
             <Funnel size={16} />
             Filters
           </div>
-          
+
           <div className="grid md:grid-cols-4 gap-4">
             <div className="relative">
-              <MagnifyingGlass size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+              <MagnifyingGlass
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              />
               <Input
                 placeholder="Search requests..."
                 value={searchTerm}
@@ -135,68 +152,66 @@ export function RequestsPage({ onNavigate }: RequestsPageProps) {
                 className="pl-10"
               />
             </div>
-            
-            <Select value={selectedCategory} onValueChange={(value) => setSelectedCategory(value as Category | 'all')}>
+
+            <Select
+              value={selectedCategory}
+              onValueChange={(value) => setSelectedCategory(value as Category | 'all')}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="All categories" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {CATEGORIES.map(category => (
-                  <SelectItem key={category.value} value={category.value}>
-                    {category.label}
+                {CATEGORIES.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>
+                    {c.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            
-            <Select value={selectedTag} onValueChange={(value) => setSelectedTag(value as Tag | 'all')}>
+
+            <Select
+              value={selectedTag}
+              onValueChange={(value) => setSelectedTag(value as Tag | 'all')}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="All tags" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Tags</SelectItem>
-                {TAGS.map(tag => (
-                  <SelectItem key={tag.value} value={tag.value}>
-                    {tag.label}
+                {TAGS.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>
+                    {t.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            
+
             <Input
               placeholder="Location..."
               value={locationFilter}
               onChange={(e) => setLocationFilter(e.target.value)}
             />
           </div>
-          
+
           {hasActiveFilters && (
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Active filters:</span>
-              {searchTerm && (
-                <Badge variant="secondary" className="gap-1">
-                  Search: {searchTerm}
-                </Badge>
-              )}
+              {searchTerm && <Badge variant="secondary">Search: {searchTerm}</Badge>}
               {selectedCategory !== 'all' && (
-                <Badge variant="secondary" className="gap-1">
-                  {CATEGORIES.find(c => c.value === selectedCategory)?.label}
+                <Badge variant="secondary">
+                  {CATEGORIES.find((c) => c.value === selectedCategory)?.label}
                 </Badge>
               )}
               {selectedTag !== 'all' && (
-                <Badge variant="secondary" className="gap-1">
-                  {TAGS.find(t => t.value === selectedTag)?.label}
+                <Badge variant="secondary">
+                  {TAGS.find((t) => t.value === selectedTag)?.label}
                 </Badge>
               )}
-              {locationFilter && (
-                <Badge variant="secondary" className="gap-1">
-                  Location: {locationFilter}
-                </Badge>
-              )}
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              {locationFilter && <Badge variant="secondary">Location: {locationFilter}</Badge>}
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={clearFilters}
                 className="text-muted-foreground hover:text-foreground"
               >
@@ -214,7 +229,7 @@ export function RequestsPage({ onNavigate }: RequestsPageProps) {
         ) : filteredRequests.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground text-lg mb-4">
-              {requests.length === 0 ? 'No requests found.' : 'No requests found matching your filters.'}
+              {allRows.length === 0 ? 'No requests found.' : 'No requests found matching your filters.'}
             </p>
             {hasActiveFilters && (
               <Button
@@ -228,22 +243,26 @@ export function RequestsPage({ onNavigate }: RequestsPageProps) {
           </div>
         ) : (
           <div className="grid md:grid-cols-2 gap-6">
-            {filteredRequests.map((request) => (
+            {filteredRequests.map((req) => (
               <RequestCard
-                key={request.id}
-                request={request}
-                onClick={() => onNavigate('request-detail', request.id)}
+                key={req.id}
+                request={req}
+                onClick={
+                  isUUID(String(req.id))
+                    ? () => onNavigate('request-detail', String(req.id))
+                    : undefined
+                }
               />
             ))}
           </div>
         )}
 
         {/* Load More */}
-        {!loading && hasMore && !hasActiveFilters && (
+        {!loading && !hasActiveFilters && hasMore && (
           <div className="text-center pt-8">
             <Button
               variant="outline"
-              onClick={loadMoreRequests}
+              onClick={loadMore}
               disabled={loadingMore}
               className="hover:bg-primary hover:text-primary-foreground"
             >
@@ -253,5 +272,5 @@ export function RequestsPage({ onNavigate }: RequestsPageProps) {
         )}
       </div>
     </div>
-  );
+  )
 }
