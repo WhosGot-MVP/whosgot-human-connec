@@ -1,115 +1,98 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Sparkle } from '@phosphor-icons/react';
-import { CATEGORIES, TAGS, Category, Tag, Request } from '@/lib/types';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/components/AuthProvider';
-import { toast } from 'sonner';
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { ArrowLeft, Sparkle } from '@phosphor-icons/react'
+import { CATEGORIES, TAGS, Category, Tag, Request } from '@/lib/types'
+import { useAuth } from '@/components/AuthProvider'
+import { toast } from 'sonner'
+
+// ⬇️ наш API-слой для requests (никаких прямых insert в таблицу)
+import { createRequest, fetchRequestsWithUser, type RequestRow } from '@/api/requests'
 
 interface CreateRequestPageProps {
-  onNavigate: (page: any, requestId?: string) => void;
+  onNavigate: (page: any, requestId?: string) => void
 }
 
 export function CreateRequestPage({ onNavigate }: CreateRequestPageProps) {
-  const { user } = useAuth();
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<Category | ''>('');
-  const [tag, setTag] = useState<Tag | ''>('');
-  const [location, setLocation] = useState('');
-  const [photoUrl, setPhotoUrl] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSimilar, setShowSimilar] = useState(false);
-  const [similarRequests, setSimilarRequests] = useState<Request[]>([]);
+  const { user } = useAuth()
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [category, setCategory] = useState<Category | ''>('')
+  const [tag, setTag] = useState<Tag | ''>('')
+  const [location, setLocation] = useState('')
+  const [photoUrl, setPhotoUrl] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showSimilar, setShowSimilar] = useState(false)
+  const [similarRequests, setSimilarRequests] = useState<Request[]>([])
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     if (!user) {
-      toast.error('Please sign in to create a request.');
-      return;
+      toast.error('Please sign in to create a request.')
+      return
     }
     if (!title.trim() || !category) {
-      toast.error('Please fill in all required fields.');
-      return;
+      toast.error('Please fill in all required fields.')
+      return
     }
 
-    setIsSubmitting(true);
+    setIsSubmitting(true)
     try {
-      if (!supabase) {
-        // Mock submission for demo
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        toast.success('Your request has been posted! (Demo mode)');
-        await fetchSimilarRequests();
-        setShowSimilar(true);
-        return;
-      }
+      // создаём запись через API: база сама проставит автора и даты
+      await createRequest({
+        title: title.trim(),
+        // API сам положит это в корректное поле (details/description)
+        details: description.trim(),
+      })
 
-      const { data, error } = await supabase
-        .from('requests')
-        .insert({
-          title: title.trim(),
-          description: description.trim() || null,
-          category,
-          tag: tag || null,
-          location: location.trim() || null,
-          photoUrl: photoUrl.trim() || null,
-          authorId: user.id,
-        })
-        .select()
-        .single();
+      toast.success('Your request has been posted!')
 
-      if (error) throw error;
-
-      toast.success('Your request has been posted!');
-
-      // Fetch similar requests based on category and title keywords
-      await fetchSimilarRequests();
-      setShowSimilar(true);
+      // показываем похожие
+      await fetchSimilarRequests()
+      setShowSimilar(true)
     } catch (error) {
-      console.error('Error creating request:', error);
-      toast.error('Failed to create request. Please try again.');
+      console.error('Error creating request:', error)
+      toast.error('Failed to create request. Please try again.')
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  };
+  }
 
   const fetchSimilarRequests = async () => {
     try {
-      if (!supabase) {
-        // Mock similar requests for demo
-        const { MOCK_REQUESTS } = await import('@/lib/mockData');
-        const keywords = title.toLowerCase().split(' ').filter((word) => word.length > 3);
-        const similar = MOCK_REQUESTS.filter(
+      // берём список из VIEW и фильтруем по категории/ключевым словам
+      const rows: RequestRow[] = await fetchRequestsWithUser()
+      const keywords = title.toLowerCase().split(' ').filter((w) => w.length > 3)
+
+      const normalized: Request[] = rows
+        .map((r: any) => ({
+          id: r.id,
+          authorId: r.display_name || r.user_handle || 'Someone',
+          title: r.title ?? '',
+          description: r.details ?? r.description ?? '',
+          category: (r.category as any) ?? ('' as any),
+          tag: (r.tag as any) ?? ('' as any),
+          location: r.location ?? '',
+          createdAt: r.created_at ?? new Date().toISOString(),
+        }))
+        .filter(
           (r) =>
-            r.category === category ||
-            keywords.some((keyword) => r.title.toLowerCase().includes(keyword)),
-        ).slice(0, 3);
-        setSimilarRequests(similar);
-        return;
-      }
+            (!!category && (r.category as any) === category) ||
+            keywords.some((k) => r.title.toLowerCase().includes(k))
+        )
+        .slice(0, 3)
 
-      const keywords = title.toLowerCase().split(' ').filter((word) => word.length > 3);
-
-      const { data, error } = await supabase
-        .from('requests')
-        .select('*')
-        .or(`category.eq.${category},${keywords.map((k) => `title.ilike.%${k}%`).join(',')}`)
-        .order('createdAt', { ascending: false })
-        .limit(3);
-
-      if (error) throw error;
-      setSimilarRequests(data || []);
+      setSimilarRequests(normalized)
     } catch (error) {
-      console.error('Error fetching similar requests:', error);
-      setSimilarRequests([]);
+      console.error('Error fetching similar requests:', error)
+      setSimilarRequests([])
     }
-  };
+  }
 
   if (!user) {
     return (
@@ -129,7 +112,7 @@ export function CreateRequestPage({ onNavigate }: CreateRequestPageProps) {
           </CardContent>
         </Card>
       </div>
-    );
+    )
   }
 
   if (showSimilar) {
@@ -183,7 +166,7 @@ export function CreateRequestPage({ onNavigate }: CreateRequestPageProps) {
                       <p className="text-sm text-muted-foreground line-clamp-2">{request.description}</p>
                       <div className="flex items-center gap-2 mt-2">
                         <Badge variant="outline" className="text-xs">
-                          {request.category.replace('_', ' & ')}
+                          {String(request.category).replace('_', ' & ')}
                         </Badge>
                         {request.tag && (
                           <Badge variant="secondary" className="text-xs">
@@ -199,7 +182,7 @@ export function CreateRequestPage({ onNavigate }: CreateRequestPageProps) {
           )}
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -341,7 +324,7 @@ export function CreateRequestPage({ onNavigate }: CreateRequestPageProps) {
         </Card>
       </div>
     </div>
-  );
+  )
 }
 
         
