@@ -6,7 +6,8 @@ import { CATEGORIES } from '@/lib/types'
 import { RequestCard } from '@/components/RequestCard'
 import { DEMO_EXAMPLES } from '@/lib/mockData'
 import { PencilSimple, ChatCircle, HandHeart } from '@phosphor-icons/react'
-import { fetchRequestsWithUser, type RequestRow, isUUID } from '@/api/requests'
+import { fetchRequestsWithUser, isUUID } from '@/api/requests'
+import type { RequestRow } from '@/api/requests'
 
 interface HomePageProps {
   onNavigate: (page: any, requestId?: string) => void
