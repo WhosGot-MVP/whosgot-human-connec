@@ -3,7 +3,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/components/AuthProvider';
 import { Header } from '@/components/Header';
 import { HomePage } from '@/components/pages/HomePage';
-import { RequestsPage } from '@/components/pages/RequestsPage';
+import RequestsPage from '@/components/pages/RequestsPage'; // ← default import
 import { RequestDetailPage } from '@/components/pages/RequestDetailPage';
 import { CreateRequestPage } from '@/components/pages/CreateRequestPage';
 import { AboutPage } from '@/components/pages/AboutPage';
