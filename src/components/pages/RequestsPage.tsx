@@ -5,10 +5,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { MagnifyingGlass, Funnel } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
-import { CATEGORIES, TAGS, Category, Tag, Request } from '@/lib/types'
+import { CATEGORIES, TAGS, type Category, type Tag, type Request } from '@/lib/types'
 import { RequestCard } from '@/components/RequestCard'
 import { toast } from 'sonner'
-import { fetchRequestsWithUser, type RequestRow, isUUID } from '@/api/requests'
+import { fetchRequestsWithUser, isUUID } from '@/api/requests'
+import type { RequestRow } from '@/api/requests'
 
 interface RequestsPageProps {
   onNavigate: (page: any, requestId?: string) => void
@@ -16,26 +17,24 @@ interface RequestsPageProps {
 
 const PAGE_SIZE = 20
 
-export function RequestsPage({ onNavigate }: RequestsPageProps) {
+export default function RequestsPage({ onNavigate }: RequestsPageProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<Category | 'all'>('all')
   const [selectedTag, setSelectedTag] = useState<Tag | 'all'>('all')
   const [locationFilter, setLocationFilter] = useState('')
 
-  // все записи (для фильтрации)
   const [allRows, setAllRows] = useState<Request[]>([])
-  // видимая "страница"
   const [visible, setVisible] = useState<Request[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(false)
 
   useEffect(() => {
-    (async () => {
+    ;(async () => {
       try {
         setLoading(true)
 
-        // DEMO режим — берём мок-данные
+        // DEMO режим (без Supabase): берём мок-данные
         if (!supabase) {
           const { MOCK_REQUESTS } = await import('@/lib/mockData')
           const items = [...MOCK_REQUESTS] as Request[]
@@ -45,7 +44,7 @@ export function RequestsPage({ onNavigate }: RequestsPageProps) {
           return
         }
 
-        // Прод — читаем из VIEW с именами
+        // Прод: читаем из VIEW с уже склеенными user-данными
         const rows: RequestRow[] = await fetchRequestsWithUser()
         const normalized: Request[] = rows.map((r: any) => ({
           id: r.id,
@@ -70,9 +69,6 @@ export function RequestsPage({ onNavigate }: RequestsPageProps) {
     })()
   }, [])
 
-  // Фильтры применяем к источнику:
-  // - если фильтры активны → ко всем данным
-  // - если нет → к текущей странице (видимым)
   const hasActiveFilters =
     !!searchTerm || selectedCategory !== 'all' || selectedTag !== 'all' || !!locationFilter
 
@@ -90,7 +86,6 @@ export function RequestsPage({ onNavigate }: RequestsPageProps) {
 
       const matchesCategory = selectedCategory === 'all' || r.category === selectedCategory
       const matchesTag = selectedTag === 'all' || r.tag === selectedTag
-
       const matchesLocation = !loc || (r.location?.toLowerCase().includes(loc) ?? false)
 
       return matchesSearch && matchesCategory && matchesTag && matchesLocation
