@@ -3,6 +3,9 @@ import { createContext, useContext, useState, useEffect, ReactNode, useMemo } fr
 import { supabase } from '@/lib/supabase';
 import type { User, Session } from '@supabase/supabase-js';
 
+// ⬇️ добавили: модалка для имени
+import { DisplayNamePrompt } from '@/components/ui/DisplayNamePrompt';
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -23,6 +26,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // ⬇️ состояние показа модалки “Как вас называть?”
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
 
   // ---------- DEMO fallback ----------
   useEffect(() => {
@@ -102,6 +108,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // 4) мягкая проверка имени в профиле → показать модалку один раз после логина
+  useEffect(() => {
+    if (!supabase || !user?.id) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('id', user.id)
+          .single();
+
+        if (error) return; // не мешаем UX, просто не показываем модалку
+        const display = (data?.display_name ?? '').trim();
+        const emailLocal = (user.email ?? '').split('@')[0];
+
+        const looksPlaceholder =
+          !display ||
+          display.includes('@') ||
+          display.toLowerCase() === emailLocal.toLowerCase() ||
+          /^user\s+[0-9a-f]{4,}$/i.test(display);
+
+        if (!cancelled) setShowNamePrompt(looksPlaceholder);
+      } catch {
+        /* ignore */
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]); // срабатывает при первом появлении user
+
   const signIn = async (email: string) => {
     setLoading(true);
     try {
@@ -156,9 +196,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user, session, loading]
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      {/* Модалка имени: мягкая, ничего не ломает */}
+      <DisplayNamePrompt
+        open={showNamePrompt}
+        onClose={() => setShowNamePrompt(false)}
+        userId={user?.id}
+      />
+    </AuthContext.Provider>
+  );
 }
-
 
      
 
